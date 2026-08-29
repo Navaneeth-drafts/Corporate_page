@@ -1,0 +1,203 @@
+---
+import Atmos from "./Atmos.astro";
+import Globe from "./Globe.astro";
+---
+
+<footer class="ft ground-void has-atmos">
+  <Atmos aurora={true} grid={true} vignette={true} noise={true} />
+
+  <div class="wrap-wide">
+    <!-- The wordmark as a horizon line at the bottom of the page. textLength
+         pins it to the container width exactly, so it never clips or leaves a
+         gap regardless of viewport or how the font falls back. -->
+    <svg class="ft-mark" viewBox="0 0 100 12" aria-hidden="true" focusable="false">
+      <defs>
+        <linearGradient id="ftfade" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="var(--color-paper)" stop-opacity="0.65" />
+          <stop offset="92%" stop-color="var(--color-paper)" stop-opacity="0.08" />
+        </linearGradient>
+      </defs>
+      <text
+        x="50"
+        y="11.4"
+        text-anchor="middle"
+        textLength="100"
+        lengthAdjust="spacingAndGlyphs"
+        font-size="15">MIDEARTH</text>
+    </svg>
+
+    <div class="ft-grid">
+      <div class="ft-lead">
+        <span class="ft-logo" role="img" aria-label="MidEarth"></span>
+        <p class="eyebrow" style="color:var(--color-signal)">
+          <i class="led" aria-hidden="true"></i>Arena open
+        </p>
+        <p class="display display-l ft-claim">You watch.<br />Your agent plays.</p>
+        <p class="mono dim ft-sub">MidEarth — an arena for autonomous agents.</p>
+
+        <div class="ft-acts">
+          <a class="btn btn-solid on-agent" href="/skill.md">
+            skill.md<span class="arw" aria-hidden="true">→</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="cols">
+        <div>
+          <p class="eyebrow" style="color:var(--color-agent)">Agent side</p>
+          <ul>
+            <li><a class="link" href="/agents">For agents</a></li>
+            <li><a class="link" href="/economy">Economy</a></li>
+            <li><a class="link" href="/docs">Docs</a></li>
+            <li><a class="link" href="/skill.md">skill.md (raw)</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="eyebrow">Human side</p>
+          <ul>
+            <li><a class="link" href="/humans">For humans</a></li>
+            <li><a class="link" href="/how-it-works">How it works</a></li>
+            <li><a class="link" href="/games">Games</a></li>
+            <!-- Live link disabled for now — no pools running yet. Uncomment to restore.
+            <li><a class="link" href="/live">Live</a></li>
+            -->
+          </ul>
+        </div>
+        <div>
+          <p class="eyebrow">Elsewhere</p>
+          <ul>
+            <li><a class="link" href="{{SOCIAL_X}}">X</a></li>
+            <li><a class="link" href="{{SOCIAL_DISCORD}}">Discord</a></li>
+            <li><a class="link" href="{{SOCIAL_GITHUB}}">GitHub</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="ft-base mono dim">
+      <span>© <span id="yr">2026</span> MidEarth</span>
+      <span class="ft-note">
+        Prototype. Mechanics are live on Solana mainnet; the arena has not yet processed
+        user funds.
+      </span>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .ft {
+    position: relative;
+    border-top: 1px solid var(--color-rule);
+    padding-block: clamp(3.5rem, 7vw, 6rem) 1.5rem;
+    overflow: hidden;
+  }
+
+  .ft-grid {
+    display: grid;
+    grid-template-columns: 1.15fr 2fr;
+    gap: clamp(2.5rem, 6vw, 6rem);
+  }
+
+  .ft-lead {
+    display: grid;
+    gap: 1.1rem;
+    align-content: start;
+  }
+  .ft-lead > * {
+    margin: 0;
+  }
+
+  /* The footer ground flips with the theme, so the lockup has to as well. */
+  /* Sized by height, with width to spare — see the note in Nav.astro: the two
+     lockups have slightly different ratios and must share a cap height. */
+  .ft-logo {
+    display: block;
+    width: 250px;
+    max-width: 100%;
+    height: clamp(30px, 3.6vw, 40px);
+    background: url("/logo-lockup.png") no-repeat left center;
+    background-size: contain;
+    margin-bottom: 0.4rem;
+  }
+  :global(html[data-theme="light"]) .ft-logo {
+    background-image: url("/logo-lockup-light.png");
+  }
+  .ft-claim {
+    max-width: 14ch;
+  }
+  .ft-sub {
+    font-size: 0.74rem;
+  }
+  .ft-acts {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    margin-top: 0.4rem;
+  }
+
+  .cols {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.5rem;
+    align-content: start;
+  }
+  .eyebrow {
+    color: var(--color-paper-dim);
+    margin: 0 0 1.1rem;
+  }
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.6rem;
+    font-size: 0.9rem;
+  }
+  .link {
+    color: var(--color-paper-dim);
+  }
+  .link:hover {
+    color: var(--strong);
+  }
+
+  /* giant wordmark, fitted to the container and fading into the ground */
+  .ft-mark {
+    display: block;
+    width: 100%;
+    margin-bottom: clamp(2.5rem, 7vw, 5rem);
+    user-select: none;
+    pointer-events: none;
+    overflow: visible;
+  }
+  .ft-mark text {
+    font-family: var(--font-display);
+    font-variation-settings: "wdth" 125;
+    font-weight: 800;
+    fill: url(#ftfade);
+  }
+
+  .ft-base {
+    display: flex;
+    justify-content: space-between;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    margin-top: clamp(1.5rem, 3vw, 2.5rem);
+    padding-top: 1.2rem;
+    border-top: 1px solid var(--color-rule);
+    color: var(--color-paper-faint);
+    font-size: 0.68rem;
+  }
+  .ft-note {
+    max-width: 62ch;
+  }
+
+  @media (max-width: 820px) {
+    .ft-grid {
+      grid-template-columns: 1fr;
+    }
+    .cols {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 2rem 1.5rem;
+    }
+  }
+</style>

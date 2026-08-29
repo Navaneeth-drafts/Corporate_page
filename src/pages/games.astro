@@ -1,0 +1,226 @@
+---
+import Base from "../layouts/Base.astro";
+import PageHero from "../components/PageHero.astro";
+import { games } from "../data/games";
+---
+
+<Base
+  title="Games"
+  description="PushBlock and FoodCollector: real-time physics environments with a locked base architecture, 10-agent and 100-agent pools, and rank-based payouts."
+  side="stands"
+  ogImage="/og/games.png"
+>
+  <PageHero
+    eyebrow="Environments"
+    title="Two games.|Both physical."
+    tone="void"
+    accent="signal"
+    index="real-time"
+  >
+    <p class="lede dim">
+      No turns, no move timers, no chess clock. A match is a continuous simulation on a fixed
+      timestep, and every agent in the pool is stepped together.
+    </p>
+    <p class="mono dim">
+      Engine: custom NumPy and CuPy physics ported from Unity ML-Agents environments,
+      architected to scale toward roughly 1,000 concurrent agents per match.
+    </p>
+  </PageHero>
+
+  <section class="band rule-top">
+    <div class="wrap">
+      <div class="modules">
+        {
+          games.map((g) => (
+            <article class="module" id={g.slug} data-reveal>
+              <div class="mod-photo">
+                <img class="ph ph-dark" src={g.image.dark} alt={`${g.name} match, in-arena screenshot`} loading="lazy" />
+                <img class="ph ph-light" src={g.image.light} alt={`${g.name} match, in-arena screenshot`} loading="lazy" />
+              </div>
+
+              <header class="mod-head">
+                <div>
+                  <h2 class="display display-l">{g.name}</h2>
+                  <p class="lede dim">{g.oneLine}</p>
+                </div>
+                <span class="tag" style="color:var(--color-ink-dim)">{g.status}</span>
+              </header>
+
+              <div class="mod-body">
+                <div>
+                  <h3 class="sub">Rules</h3>
+                  <ul class="rules">
+                    {g.rules.map((r) => (
+                      <li>{r}</li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div class="mod-specs">
+                  <div>
+                    <h3 class="sub">Match</h3>
+                    <dl class="kv">
+                      <div><dt>Length</dt><dd>{g.seconds}s</dd></div>
+                      <div><dt>Ranked by</dt><dd>final score</dd></div>
+                      <div><dt>Ties</dt><dd>earlier scoring tick</dd></div>
+                    </dl>
+                  </div>
+                  <div>
+                    <h3 class="sub">Pools</h3>
+                    <dl class="kv">
+                      {g.tiers.map((t) => (
+                        <div><dt>{t}</dt><dd>{"{{ENTRY_FEE}}"} IDLE</dd></div>
+                      ))}
+                      <div><dt>Opens</dt><dd>on a recurring schedule</dd></div>
+                    </dl>
+                  </div>
+                  <div>
+                    <h3 class="sub">Locked base model</h3>
+                    <dl class="kv">
+                      <div><dt>Arch</dt><dd>{g.arch}</dd></div>
+                      <div><dt>Obs dim</dt><dd>{g.obsDim}</dd></div>
+                      <div><dt>Act dim</dt><dd>{g.actDim}</dd></div>
+                      <div><dt>Format</dt><dd>ONNX</dd></div>
+                    </dl>
+                  </div>
+                </div>
+              </div>
+            </article>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="band ground-deck" aria-labelledby="fair-h">
+    <div class="wrap">
+      <div class="fair">
+        <div class="band-head" style="margin-bottom:0">
+          <p class="eyebrow" style="color:var(--color-agent)">Fairness</p>
+          <h2 id="fair-h" class="display display-l">The architecture is locked on purpose.</h2>
+          <p class="dim">
+            Every game publishes one base ONNX architecture. You fine-tune it and upload your
+            weights, and the platform checks the shape matches exactly before you can enter a
+            pool. An upload that does not match is rejected with a 422, not quietly resized.
+          </p>
+          <p class="dim">
+            The effect: a pool measures how well you trained, not how much model you could
+            afford. Two agents in the same match are running the same shape with different
+            weights.
+          </p>
+        </div>
+        <pre class="code" aria-label="Model verification"><span class="verb">POST</span> <span class="path">/v1/agents/model</span>
+<span class="cmt">→ 202  shape verified, eligible to enter</span>
+<span class="cmt">→ 422  shape mismatch</span>
+<span class="cmt">   expected: {"{{BASE_SHAPE}}"}</span>
+<span class="cmt">   received: {"{{UPLOAD_SHAPE}}"}</span></pre>
+      </div>
+    </div>
+  </section>
+
+  <style>
+    .modules {
+      display: grid;
+      gap: clamp(2rem, 4vw, 3.5rem);
+    }
+    .module {
+      border: 1px solid var(--color-rule-light);
+      background: var(--color-stands-raise);
+      scroll-margin-top: 80px;
+      overflow: hidden;
+    }
+    .mod-photo {
+      position: relative;
+      aspect-ratio: 16 / 9;
+      background: var(--color-void);
+      border-bottom: 1px solid var(--color-rule-light);
+    }
+    .mod-photo .ph {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .mod-photo .ph-light {
+      display: none;
+    }
+    :global(html[data-theme="light"]) .mod-photo .ph-dark {
+      display: none;
+    }
+    :global(html[data-theme="light"]) .mod-photo .ph-light {
+      display: block;
+    }
+    .mod-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      gap: 1.5rem;
+      padding: clamp(1.4rem, 3vw, 2.4rem) clamp(1.4rem, 3vw, 2.4rem) 1.4rem;
+      border-bottom: 1px solid var(--color-rule-light);
+      flex-wrap: wrap;
+    }
+    .mod-head h2,
+    .mod-head p {
+      margin: 0;
+    }
+    .mod-head p {
+      margin-top: 0.6rem;
+    }
+    .mod-body {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+      gap: clamp(1.5rem, 3vw, 3rem);
+      padding: 1.6rem clamp(1.4rem, 3vw, 2.4rem) clamp(1.4rem, 3vw, 2.4rem);
+    }
+    .sub {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--color-ink-dim);
+      margin: 0 0 0.9rem;
+      font-weight: 500;
+    }
+    .rules {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: 0.8rem;
+      font-size: 0.95rem;
+      max-width: 50ch;
+    }
+    .rules li {
+      padding-left: 1.1rem;
+      position: relative;
+    }
+    .rules li::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0.55em;
+      width: 7px;
+      height: 7px;
+      border: 1px solid var(--color-ink);
+    }
+    .mod-specs {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+      gap: clamp(1rem, 2vw, 1.8rem);
+      align-content: start;
+    }
+    .fair {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+      gap: clamp(1.5rem, 4vw, 3.5rem);
+      align-items: start;
+    }
+    @media (max-width: 900px) {
+      .mod-body,
+      .fair {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+  </style>
+</Base>

@@ -1,0 +1,1126 @@
+---
+import { LAND, REGIONS, HUB } from "../data/world";
+
+interface Props {
+  /**
+   * compact = the section sits directly under the hero headline, so it drops
+   * its own index, headline and lede and leads with the panels instead. Two
+   * big headlines back to back reads as a stutter.
+   */
+  compact?: boolean;
+}
+const { compact = false } = Astro.props;
+
+/**
+ * The whole pipeline, drawn explicitly: data centres → AI agents → the game
+ * → settlement. Four labelled panels driven by ONE loop, so what a panel says
+ * is what is actually happening in the others at that moment.
+ *
+ * An agent keeps its colour the entire way through — from its card, to the
+ * arc it flies across the map, to its square on the field, to its row on the
+ * scoreboard. That is what makes the four panels legible as one story rather
+ * than four unrelated widgets.
+ *
+ * Region coordinates are real. Everything that moves is generated locally to
+ * make the shape of the pipeline visible, and the caption says so.
+ */
+---
+
+<section class:list={["net ground-void has-atmos", { compact }]} aria-labelledby={compact ? undefined : "net-h"} aria-label={compact ? "How the network works" : undefined} data-net-section>
+  <div class="atmos" aria-hidden="true">
+    <div class="atmos-aurora"><i></i></div>
+    <div class="atmos-noise"></div>
+    <div class="atmos-vignette"></div>
+  </div>
+
+  <div class="wrap-wide">
+    {
+      compact ? (
+        <p class="net-lede lede dim">
+          Agents run in cloud regions all over the world, enter the same pools, are
+          stepped on the same tick, and settle against the same ledger. Here is that
+          path, end to end.
+        </p>
+      ) : (
+        <>
+          <p class="band-index"><b>04</b> the network</p>
+          <header class="band-head">
+            <h2 id="net-h" class="display display-l">
+              <span class="line-mask"><span>Everywhere at once,</span></span>
+              <span class="line-mask" style="--d:90ms"><span>settling in one place.</span></span>
+            </h2>
+            <p class="lede dim">
+              Agents run in cloud regions all over the world. They enter the same pools,
+              are stepped on the same tick, and settle against the same ledger. Below is
+              that path, end to end.
+            </p>
+          </header>
+        </>
+      )
+    }
+
+    <!-- ============================================ 01 · data centres -->
+    <div class="panel map-panel" data-net>
+      <div class="p-head">
+        <span class="p-num mono">01</span>
+        <span class="p-title">CONNECT YOUR AGENTS ACROSS THE WORLD</span>
+        <span class="p-note mono dim">agents run where their owner puts them</span>
+        <span class="p-stat mono" data-phase-chip>
+          <i class="led" aria-hidden="true"></i><span data-phase>deploying agents</span>
+        </span>
+      </div>
+      <canvas
+        data-map
+        role="img"
+        aria-label="World map with markers on real cloud regions. Agents launch from those regions and travel to the arena at the centre."
+      ></canvas>
+      <div class="key mono" aria-hidden="true">
+        <span><i class="sw-dc"></i>data centre</span>
+        <span><i class="sw-ag"></i>agent in flight</span>
+        <span><i class="sw-ar"></i>arena</span>
+      </div>
+    </div>
+
+    <div class="flow" aria-hidden="true"><i></i><i></i><i></i></div>
+
+    <!-- ================================ 02 agents · 03 game · 04 chain -->
+    <div class="tri">
+      <div class="panel">
+        <div class="p-head">
+          <span class="p-num mono">02</span>
+          <span class="p-title">AI agents</span>
+          <span class="p-note mono dim" data-seat>0 / 4 seated</span>
+        </div>
+        <div class="agents" data-agents></div>
+      </div>
+
+      <div class="panel">
+        <div class="p-head">
+          <span class="p-num mono">03</span>
+          <span class="p-title">The game</span>
+          <span class="p-note mono dim" data-clock>PushBlock &middot; 0:00</span>
+        </div>
+        <canvas
+          data-match
+          role="img"
+          aria-label="Miniature PushBlock match: four coloured agents push blocks across a goal line."
+        ></canvas>
+        <div class="scores" data-scores></div>
+      </div>
+
+      <div class="panel">
+        <div class="p-head">
+          <span class="p-num mono">04</span>
+          <span class="p-title">Settlement</span>
+          <span class="p-note mono dim">rank payout, then on-chain</span>
+        </div>
+        <div class="chain" data-chain aria-hidden="true"></div>
+        <div class="ledger mono" data-ledger></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<style>
+  .net {
+    position: relative;
+    padding-block: clamp(4.5rem, 10vw, 9rem);
+    overflow: hidden;
+  }
+  /* continues the hero rather than starting a new band */
+  .net.compact {
+    padding-block: 0 clamp(3rem, 6vw, 5rem);
+  }
+  .net-lede {
+    margin: 0 0 clamp(1.6rem, 3.5vw, 2.4rem);
+  }
+
+  /* --------------------------------------------------------- panels ---- */
+  .panel {
+    position: relative;
+    border: 1px solid var(--color-rule);
+    background: linear-gradient(160deg, var(--color-deck-high), var(--color-void) 74%);
+    box-shadow: var(--shadow-panel);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .p-head {
+    display: flex;
+    align-items: baseline;
+    gap: 0.7rem;
+    padding: 0.7rem 0.9rem;
+    border-bottom: 1px solid var(--color-rule);
+    background: color-mix(in srgb, var(--color-void) 55%, transparent);
+    flex-wrap: wrap;
+  }
+  .p-num {
+    color: var(--color-agent);
+    font-size: 0.68rem;
+    letter-spacing: 0.18em;
+  }
+  .p-title {
+    font-family: var(--font-display);
+    font-variation-settings: "wdth" 110;
+    font-weight: 700;
+    font-size: 0.98rem;
+    letter-spacing: -0.01em;
+    color: var(--color-paper);
+  }
+  .p-note {
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-left: auto;
+  }
+  .p-stat {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    border: 1px solid var(--color-rule-hot);
+    padding: 0.28rem 0.6rem;
+    font-size: 0.6rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-signal);
+  }
+
+  /* ------------------------------------------------------------ map ---- */
+  .map-panel canvas {
+    display: block;
+    width: 100%;
+    height: clamp(290px, 38vw, 480px);
+  }
+  .key {
+    position: absolute;
+    left: 0.9rem;
+    bottom: 0.75rem;
+    display: flex;
+    gap: 1.1rem;
+    flex-wrap: wrap;
+    font-size: 0.6rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-paper-faint);
+    pointer-events: none;
+  }
+  .key span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .key i {
+    flex: none;
+  }
+  .sw-dc {
+    width: 9px;
+    height: 11px;
+    border: 1.5px solid var(--color-agent);
+    box-shadow: 0 0 8px var(--color-agent);
+  }
+  .sw-ag {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--color-agent-hot);
+  }
+  .sw-ar {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 1.5px solid var(--color-signal);
+    box-shadow: 0 0 8px var(--color-signal);
+  }
+
+  /* --------------------------------------------------------- arrows ---- */
+  .flow {
+    display: none;
+  }
+  .flow i {
+    width: 5px;
+    height: 5px;
+    background: var(--color-agent);
+    transform: rotate(45deg);
+    opacity: 0.2;
+    animation: flowpulse 1.6s var(--ease-in-out) infinite;
+  }
+  .flow i:nth-child(2) {
+    animation-delay: 0.18s;
+  }
+  .flow i:nth-child(3) {
+    animation-delay: 0.36s;
+  }
+  @keyframes flowpulse {
+    0%,
+    100% {
+      opacity: 0.18;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+
+  .tri {
+    display: none;
+  }
+
+  /* --------------------------------------------------------- agents ---- */
+  .agents {
+    padding: 0.75rem;
+    display: grid;
+    gap: 0.5rem;
+    align-content: start;
+    min-height: 16.5rem;
+  }
+  .agents :global(.ag) {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 0.65rem;
+    border: 1px solid color-mix(in srgb, currentColor 40%, transparent);
+    background: color-mix(in srgb, currentColor 7%, transparent);
+    padding: 0.55rem 0.65rem;
+    animation: agin 0.45s var(--ease-out);
+  }
+  @keyframes agin {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+  }
+  /* rack glyph, tinted with the agent's own colour */
+  .agents :global(.ag .chip) {
+    width: 22px;
+    height: 22px;
+    border: 1px solid currentColor;
+    display: grid;
+    align-content: center;
+    gap: 2.5px;
+    padding: 0 4px;
+  }
+  .agents :global(.ag .chip b) {
+    display: block;
+    height: 1.5px;
+    background: currentColor;
+  }
+  .agents :global(.ag .meta) {
+    display: grid;
+    gap: 0.15rem;
+    min-width: 0;
+  }
+  .agents :global(.ag .id) {
+    font-family: var(--font-mono);
+    font-size: 0.73rem;
+    color: var(--color-paper);
+    letter-spacing: 0.03em;
+  }
+  .agents :global(.ag .reg) {
+    font-family: var(--font-mono);
+    font-size: 0.58rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-paper-faint);
+  }
+  .agents :global(.ag .st) {
+    font-family: var(--font-mono);
+    font-size: 0.55rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    border: 1px solid currentColor;
+    padding: 0.16rem 0.4rem;
+    white-space: nowrap;
+  }
+  .agents :global(.ag-empty) {
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-paper-faint);
+    padding: 0.6rem 0.2rem;
+  }
+
+  /* ----------------------------------------------------------- game ---- */
+  .tri canvas[data-match] {
+    display: block;
+    width: 100%;
+    height: 11.5rem;
+    background: var(--color-void);
+    border-bottom: 1px solid var(--color-rule);
+  }
+  .scores {
+    padding: 0.65rem 0.75rem 0.8rem;
+    display: grid;
+    gap: 0.4rem;
+    min-height: 4.5rem;
+    align-content: start;
+  }
+  .scores :global(.sc) {
+    display: grid;
+    grid-template-columns: 9px 1fr auto;
+    align-items: center;
+    gap: 0.55rem;
+    font-family: var(--font-mono);
+    font-size: 0.64rem;
+  }
+  .scores :global(.sc .dot) {
+    width: 9px;
+    height: 9px;
+    background: currentColor;
+  }
+  .scores :global(.sc .track) {
+    height: 3px;
+    background: var(--color-rule);
+    position: relative;
+    overflow: hidden;
+  }
+  .scores :global(.sc .track i) {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 0%;
+    background: currentColor;
+    transition: width 0.45s var(--ease-out);
+  }
+  .scores :global(.sc .v) {
+    color: var(--color-paper);
+    font-variant-numeric: tabular-nums;
+    min-width: 1.2rem;
+    text-align: right;
+  }
+
+  /* ----------------------------------------------------- settlement ---- */
+  .chain {
+    display: flex;
+    align-items: center;
+    padding: 1.05rem 0.75rem 0.7rem;
+    min-height: 3.5rem;
+    overflow: hidden;
+  }
+  .chain :global(.blk) {
+    width: 20px;
+    height: 20px;
+    border: 1px solid var(--value-fg, var(--color-value));
+    background: color-mix(in srgb, var(--value-fg, var(--color-value)) 14%, transparent);
+    flex: none;
+    animation: blkin 0.5s var(--ease-spring);
+  }
+  .chain :global(.blk.new) {
+    background: color-mix(in srgb, var(--value-fg, var(--color-value)) 40%, transparent);
+    box-shadow: 0 0 14px color-mix(in srgb, var(--value-fg, var(--color-value)) 80%, transparent);
+  }
+  .chain :global(.lnk) {
+    width: 12px;
+    height: 1px;
+    background: var(--value-fg, var(--color-value));
+    opacity: 0.5;
+    flex: none;
+  }
+  @keyframes blkin {
+    from {
+      opacity: 0;
+      transform: scale(0.4);
+    }
+  }
+  .chain :global(.blk-empty) {
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-paper-faint);
+  }
+
+  .ledger {
+    padding: 0 0.75rem 0.8rem;
+    display: grid;
+    gap: 0.32rem;
+    font-size: 0.62rem;
+    align-content: start;
+    min-height: 7.5rem;
+  }
+  .ledger :global(.row) {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.6rem;
+    border-bottom: 1px solid var(--color-rule);
+    padding-bottom: 0.3rem;
+    color: var(--color-paper-faint);
+    animation: agin 0.45s var(--ease-out);
+  }
+  .ledger :global(.row b) {
+    color: var(--value-fg, var(--color-value));
+    font-weight: 400;
+  }
+  .ledger :global(.row .h) {
+    color: var(--color-paper-dim);
+  }
+  .ledger :global(.led-empty) {
+    color: var(--color-paper-faint);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .cap {
+    margin: clamp(1rem, 2vw, 1.6rem) 0 0;
+    font-size: 0.66rem;
+    line-height: 1.6;
+    max-width: 82ch;
+  }
+
+  @media (max-width: 1000px) {
+    .tri {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .agents,
+    .ledger {
+      min-height: 0;
+    }
+  }
+  @media (max-width: 560px) {
+    .p-note {
+      margin-left: 0;
+      width: 100%;
+    }
+    .key span:nth-child(3) {
+      display: none;
+    }
+  }
+</style>
+
+<script is:inline define:vars={{ LAND, REGIONS, HUB }}>
+  (function () {
+    // Scope every lookup to this section. Querying the document would reach
+    // into other components — Arena.astro also uses [data-clock], so a
+    // document-wide query wrote this panel's time into the hero's arena.
+    var sec = document.querySelector("[data-net-section]");
+    if (!sec) return;
+    var root = sec.querySelector("[data-net]");
+    if (!root) return;
+
+    var mapC = root.querySelector("[data-map]");
+    var mctx = mapC.getContext("2d");
+    var matchC = sec.querySelector("[data-match]");
+    var gctx = matchC.getContext("2d");
+    var elAgents = sec.querySelector("[data-agents]");
+    var elScores = sec.querySelector("[data-scores]");
+    var elChain = sec.querySelector("[data-chain]");
+    var elLedger = sec.querySelector("[data-ledger]");
+    var elPhase = sec.querySelector("[data-phase]");
+    var elSeat = sec.querySelector("[data-seat]");
+    var elClock = sec.querySelector("[data-clock]");
+
+    var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    var css = getComputedStyle(root);
+    function tok(n, fb) {
+      var v = css.getPropertyValue(n).trim();
+      return v || fb;
+    }
+    var AGENT = tok("--color-agent", "#22c8e8");
+    var AGENT_HOT = tok("--color-agent-hot", "#7de9f7");
+    var SIGNAL = tok("--color-signal", "#35e084");
+    var FAINT = tok("--color-paper-faint", "#5a6b75");
+    var PAPER = tok("--color-paper", "#e8eef0");
+
+    // Four separable stops along the brand ramp. An agent keeps its colour
+    // from card, to arc, to square on the field, to scoreboard row.
+    var SEATC = ["#22c8e8", "#25d6c4", "#35e084", "#8ae84a"];
+    var SEATS = 4;
+
+    function rgba(hex, a) {
+      var n = parseInt(hex.slice(1), 16);
+      return "rgba(" + ((n >> 16) & 255) + "," + ((n >> 8) & 255) + "," + (n & 255) + "," + a + ")";
+    }
+    function hex4() {
+      return Math.floor(Math.random() * 65536).toString(16).padStart(4, "0");
+    }
+
+    /* ============================================================== MAP == */
+    var LAT_TOP = 80,
+      LAT_BOT = -58;
+    var W = 0, H = 0, dpr = 1, mx = 0, my = 0, mw = 0, mh = 0;
+    var base = document.createElement("canvas");
+    var bctx = base.getContext("2d");
+    var hub = null, sites = [];
+
+    function project(lat, lon) {
+      return {
+        x: mx + ((lon + 180) / 360) * mw,
+        y: my + ((LAT_TOP - lat) / (LAT_TOP - LAT_BOT)) * mh,
+      };
+    }
+
+    function layoutMap() {
+      var r = mapC.getBoundingClientRect();
+      if (!r.width || !r.height) return false;
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      W = r.width;
+      H = r.height;
+      mapC.width = Math.round(W * dpr);
+      mapC.height = Math.round(H * dpr);
+      mctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      var aspect = 360 / (LAT_TOP - LAT_BOT);
+      mw = W;
+      mh = W / aspect;
+      if (mh > H) { mh = H; mw = H * aspect; }
+      mw *= 0.97;
+      mh *= 0.97;
+      mx = (W - mw) / 2;
+      my = (H - mh) / 2;
+
+      base.width = mapC.width;
+      base.height = mapC.height;
+      bctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      drawLand();
+
+      hub = project(HUB.lat, HUB.lon);
+      sites = REGIONS.map(function (rg) {
+        var p = project(rg.lat, rg.lon);
+        var midx = (p.x + hub.x) / 2, midy = (p.y + hub.y) / 2;
+        var dx = hub.x - p.x, dy = hub.y - p.y;
+        var len = Math.hypot(dx, dy) || 1;
+        var bow = Math.min(len * 0.26, mh * 0.3);
+        return {
+          reg: rg, x: p.x, y: p.y,
+          cx: midx + (-dy / len) * bow,
+          cy: midy + (dx / len) * bow,
+          pulse: Math.random() * 6.28,
+          flash: 0,
+        };
+      });
+      return true;
+    }
+
+    function drawLand() {
+      bctx.clearRect(0, 0, W, H);
+      var rad = Math.max(0.9, (mw / 72) * 0.3);
+      for (var i = 0; i < LAND.length; i++) {
+        var row = LAND[i];
+        var lat = 90 - row.r * 5 - 2.5;
+        if (lat > LAT_TOP || lat < LAT_BOT) continue;
+        for (var s = 0; s < row.s.length; s++) {
+          for (var c = row.s[s][0]; c <= row.s[s][1]; c++) {
+            var p = project(lat, -180 + c * 5 + 2.5);
+            var edge = Math.min(1, (1 - Math.abs(p.x - (mx + mw / 2)) / (mw / 2)) * 3.2);
+            bctx.fillStyle = rgba(AGENT, 0.3 * Math.max(0.3, edge));
+            bctx.beginPath();
+            bctx.arc(p.x, p.y, rad, 0, Math.PI * 2);
+            bctx.fill();
+          }
+        }
+      }
+    }
+
+    function bez(s, t) {
+      var u = 1 - t;
+      return {
+        x: u * u * s.x + 2 * u * t * s.cx + t * t * hub.x,
+        y: u * u * s.y + 2 * u * t * s.cy + t * t * hub.y,
+      };
+    }
+
+    /* ========================================================= PIPELINE == */
+    var flights = [], seats = [], chain = [], ledger = [];
+    var phase = "deploy", phaseT = 0, spawnIn = 0.25, matchClock = 0;
+    var MATCH_LEN = 9;
+
+    var FW = 100, FH = 58, GOAL = 82;
+    var players = [], blocks = [];
+
+    function resetMatch() {
+      players = seats.map(function (s, i) {
+        return {
+          c: s.color, id: s.id,
+          x: 8 + Math.random() * 8,
+          y: (i + 0.5) * (FH / SEATS),
+          vx: 0, vy: 0, score: 0,
+        };
+      });
+      blocks = [newBlock(), newBlock(), newBlock()];
+    }
+    function newBlock() {
+      var t = Math.floor(Math.random() * 3);
+      return {
+        s: [5, 7, 9][t], v: [1, 2, 3][t],
+        x: 26 + Math.random() * 30,
+        y: 8 + Math.random() * (FH - 16),
+        vx: 0,
+      };
+    }
+
+    function stepMatch(dt) {
+      for (var i = 0; i < players.length; i++) {
+        var a = players[i];
+        var b = blocks[i % blocks.length];
+        if (!b) continue;
+        var behind = a.x < b.x - b.s / 2;
+        var tx = behind ? b.x + 6 : b.x - (b.s / 2 + 3);
+        var ty = b.y;
+        var dx = tx - a.x, dy = ty - a.y;
+        var m = Math.hypot(dx, dy) || 1;
+        a.vx += ((dx / m) * 20 - a.vx) * 6 * dt;
+        a.vy += ((dy / m) * 20 - a.vy) * 6 * dt;
+        a.x += a.vx * dt;
+        a.y += a.vy * dt;
+        a.y = Math.max(3, Math.min(FH - 3, a.y));
+        a.x = Math.max(3, Math.min(FW - 3, a.x));
+      }
+      for (var k = 0; k < blocks.length; k++) {
+        var bl = blocks[k];
+        for (var j = 0; j < players.length; j++) {
+          var p = players[j];
+          if (Math.abs(p.x - bl.x) < bl.s / 2 + 3 && Math.abs(p.y - bl.y) < bl.s / 2 + 3 && p.x < bl.x) {
+            bl.vx += 150 * dt;
+            bl.last = p;
+          }
+        }
+        bl.vx *= 0.92;
+        bl.x += bl.vx * dt;
+        if (bl.x - bl.s / 2 > GOAL) {
+          if (bl.last) bl.last.score += bl.v;
+          blocks[k] = newBlock();
+          renderScores();
+        }
+      }
+    }
+
+    function drawMatch() {
+      var r = matchC.getBoundingClientRect();
+      if (!r.width) return;
+      var d = Math.min(window.devicePixelRatio || 1, 2);
+      if (matchC.width !== Math.round(r.width * d)) {
+        matchC.width = Math.round(r.width * d);
+        matchC.height = Math.round(r.height * d);
+      }
+      gctx.setTransform(d, 0, 0, d, 0, 0);
+      gctx.clearRect(0, 0, r.width, r.height);
+
+      var sc = Math.min(r.width / FW, r.height / FH);
+      var ox = (r.width - FW * sc) / 2, oy = (r.height - FH * sc) / 2;
+      gctx.save();
+      gctx.translate(ox, oy);
+      gctx.scale(sc, sc);
+
+      gctx.strokeStyle = rgba(AGENT, 0.1);
+      gctx.lineWidth = 0.2;
+      for (var gx = 0; gx <= FW; gx += 10) {
+        gctx.beginPath(); gctx.moveTo(gx, 0); gctx.lineTo(gx, FH); gctx.stroke();
+      }
+      for (var gy = 0; gy <= FH; gy += 10) {
+        gctx.beginPath(); gctx.moveTo(0, gy); gctx.lineTo(FW, gy); gctx.stroke();
+      }
+
+      gctx.fillStyle = rgba(SIGNAL, 0.1);
+      gctx.fillRect(GOAL, 0, FW - GOAL, FH);
+      gctx.strokeStyle = rgba(SIGNAL, 0.85);
+      gctx.lineWidth = 0.5;
+      gctx.beginPath(); gctx.moveTo(GOAL, 0); gctx.lineTo(GOAL, FH); gctx.stroke();
+      gctx.font = "3.4px ui-monospace, monospace";
+      gctx.fillStyle = rgba(SIGNAL, 0.85);
+      gctx.textAlign = "center";
+      gctx.fillText("GOAL", (GOAL + FW) / 2, 6);
+
+      for (var b = 0; b < blocks.length; b++) {
+        var bl = blocks[b];
+        gctx.fillStyle = rgba(PAPER, 0.13);
+        gctx.fillRect(bl.x - bl.s / 2, bl.y - bl.s / 2, bl.s, bl.s);
+        gctx.strokeStyle = rgba(PAPER, 0.6);
+        gctx.lineWidth = 0.35;
+        gctx.strokeRect(bl.x - bl.s / 2, bl.y - bl.s / 2, bl.s, bl.s);
+        gctx.font = "3.2px ui-monospace, monospace";
+        gctx.fillStyle = rgba(PAPER, 0.8);
+        gctx.fillText("+" + bl.v, bl.x, bl.y + 1.2);
+      }
+
+      for (var p2 = 0; p2 < players.length; p2++) {
+        var pl = players[p2];
+        gctx.save();
+        gctx.shadowColor = pl.c;
+        gctx.shadowBlur = 7;
+        gctx.fillStyle = pl.c;
+        gctx.fillRect(pl.x - 2.6, pl.y - 2.6, 5.2, 5.2);
+        gctx.restore();
+      }
+      gctx.restore();
+
+      if (!players.length) {
+        gctx.fillStyle = rgba(FAINT, 0.9);
+        gctx.font = "10px ui-monospace, monospace";
+        gctx.textAlign = "center";
+        gctx.fillText("waiting for the pool to fill", r.width / 2, r.height / 2);
+      }
+    }
+
+    /* ------------------------------------------------------------ DOM --- */
+    function agentRow(id, reg, st, color, op) {
+      return (
+        '<div class="ag" style="color:' + color + ";opacity:" + op + '">' +
+        '<span class="chip"><b></b><b></b><b></b></span>' +
+        '<span class="meta"><span class="id">' + id + '</span>' +
+        '<span class="reg">' + reg + "</span></span>" +
+        '<span class="st">' + st + "</span></div>"
+      );
+    }
+    function renderAgents() {
+      if (!elAgents) return;
+      if (!seats.length && !flights.length) {
+        elAgents.innerHTML = '<div class="ag-empty">no agents deployed</div>';
+      } else {
+        var html = "";
+        for (var i = 0; i < seats.length; i++) {
+          html += agentRow(seats[i].id, seats[i].reg, phase === "match" ? "playing" : "seated", seats[i].color, 1);
+        }
+        for (var f = 0; f < flights.length; f++) {
+          html += agentRow(flights[f].id, flights[f].reg, "in flight", flights[f].color, 0.6);
+        }
+        elAgents.innerHTML = html;
+      }
+      if (elSeat) elSeat.textContent = seats.length + " / " + SEATS + " seated";
+    }
+
+    function renderScores() {
+      if (!elScores) return;
+      if (!players.length) { elScores.innerHTML = ""; return; }
+      var top = 1;
+      for (var i = 0; i < players.length; i++) if (players[i].score > top) top = players[i].score;
+      elScores.innerHTML = players
+        .slice()
+        .sort(function (a, b) { return b.score - a.score; })
+        .map(function (p) {
+          return (
+            '<div class="sc" style="color:' + p.c + '">' +
+            '<span class="dot"></span>' +
+            '<span class="track"><i style="width:' + Math.round((p.score / top) * 100) + '%"></i></span>' +
+            '<span class="v">' + p.score + "</span></div>"
+          );
+        })
+        .join("");
+    }
+
+    function renderChain() {
+      if (!elChain) return;
+      if (!chain.length) {
+        elChain.innerHTML = '<span class="blk-empty">no blocks yet</span>';
+        return;
+      }
+      var out = "";
+      for (var i = 0; i < chain.length; i++) {
+        out += (i ? '<span class="lnk"></span>' : "") +
+          '<span class="blk' + (i === chain.length - 1 ? " new" : "") + '"></span>';
+      }
+      elChain.innerHTML = out;
+    }
+    function renderLedger() {
+      if (!elLedger) return;
+      if (!ledger.length) {
+        elLedger.innerHTML = '<div class="led-empty">ledger empty</div>';
+        return;
+      }
+      elLedger.innerHTML = ledger
+        .map(function (r) {
+          return '<div class="row"><b>settled</b><span>' + r.pool + '</span><span class="h">' + r.sig + "</span></div>";
+        })
+        .join("");
+    }
+
+    function setPhase(p) {
+      phase = p;
+      if (elPhase) {
+        elPhase.textContent =
+          p === "deploy" ? "deploying agents" : p === "match" ? "match running" : "settling on-chain";
+      }
+    }
+
+    /* ---------------------------------------------------------- cycle --- */
+    function spawnFlight() {
+      if (!sites.length) return;
+      var s = sites[Math.floor(Math.random() * sites.length)];
+      s.flash = 1;
+      flights.push({
+        s: s, t: 0,
+        sp: 0.42 + Math.random() * 0.14,
+        id: "agent_" + hex4(),
+        reg: s.reg.id,
+        color: SEATC[(seats.length + flights.length) % SEATS],
+      });
+      renderAgents();
+    }
+
+    function tick(dt) {
+      phaseT += dt;
+      if (phase === "deploy") {
+        spawnIn -= dt;
+        if (spawnIn <= 0 && seats.length + flights.length < SEATS) {
+          spawnFlight();
+          spawnIn = 0.8;
+        }
+        for (var i = flights.length - 1; i >= 0; i--) {
+          var f = flights[i];
+          f.t += dt * f.sp;
+          if (f.t >= 1) {
+            seats.push({ id: f.id, reg: f.reg, color: f.color });
+            flights.splice(i, 1);
+            renderAgents();
+          }
+        }
+        if (seats.length >= SEATS) {
+          setPhase("match");
+          phaseT = 0;
+          matchClock = 0;
+          resetMatch();
+          renderScores();
+          renderAgents();
+        }
+      } else if (phase === "match") {
+        matchClock += dt;
+        stepMatch(dt);
+        if (elClock) {
+          elClock.textContent = "PushBlock · 0:" + String(Math.floor(matchClock)).padStart(2, "0");
+        }
+        if (matchClock >= MATCH_LEN) {
+          setPhase("settle");
+          phaseT = 0;
+          chain.push(1);
+          if (chain.length > 9) chain.shift();
+          ledger.unshift({ pool: "pool_" + hex4() + hex4(), sig: hex4() + "…" + hex4() });
+          if (ledger.length > 4) ledger.pop();
+          renderChain();
+          renderLedger();
+          renderAgents();
+        }
+      } else if (phaseT > 2.6) {
+        seats = [];
+        players = [];
+        setPhase("deploy");
+        phaseT = 0;
+        spawnIn = 0.35;
+        renderAgents();
+        renderScores();
+        if (elClock) elClock.textContent = "PushBlock · 0:00";
+      }
+    }
+
+    function drawMap(time) {
+      mctx.clearRect(0, 0, W, H);
+      mctx.drawImage(base, 0, 0, W, H);
+
+      for (var i = 0; i < sites.length; i++) {
+        var s = sites[i];
+        mctx.strokeStyle = rgba(AGENT, 0.15);
+        mctx.lineWidth = 0.8;
+        mctx.beginPath();
+        mctx.moveTo(s.x, s.y);
+        mctx.quadraticCurveTo(s.cx, s.cy, hub.x, hub.y);
+        mctx.stroke();
+      }
+
+      for (var f = 0; f < flights.length; f++) {
+        var fl = flights[f];
+        mctx.strokeStyle = rgba(fl.color, 0.7);
+        mctx.lineWidth = 1.6;
+        mctx.beginPath();
+        var from = Math.max(0, fl.t - 0.22);
+        var a = bez(fl.s, from);
+        mctx.moveTo(a.x, a.y);
+        for (var k = from; k <= fl.t; k += 0.02) {
+          var q = bez(fl.s, k);
+          mctx.lineTo(q.x, q.y);
+        }
+        mctx.stroke();
+        var hd = bez(fl.s, fl.t);
+        mctx.save();
+        mctx.shadowColor = fl.color;
+        mctx.shadowBlur = 12;
+        mctx.fillStyle = fl.color;
+        mctx.beginPath();
+        mctx.arc(hd.x, hd.y, 3.2, 0, Math.PI * 2);
+        mctx.fill();
+        mctx.restore();
+      }
+
+      // data centres: a rack, not a dot
+      for (var m = 0; m < sites.length; m++) {
+        var st = sites[m];
+        if (st.flash > 0) st.flash -= 0.018;
+        var pl = 0.5 + 0.5 * Math.sin(time / 900 + st.pulse);
+        if (st.flash > 0) {
+          mctx.strokeStyle = rgba(AGENT_HOT, st.flash * 0.85);
+          mctx.lineWidth = 1.2;
+          mctx.beginPath();
+          mctx.arc(st.x, st.y, 9 + (1 - st.flash) * 26, 0, Math.PI * 2);
+          mctx.stroke();
+        }
+        mctx.fillStyle = rgba(AGENT, 0.09 + pl * 0.07);
+        mctx.beginPath();
+        mctx.arc(st.x, st.y, 10 + pl * 3, 0, Math.PI * 2);
+        mctx.fill();
+
+        mctx.save();
+        mctx.shadowColor = AGENT;
+        mctx.shadowBlur = 9;
+        mctx.strokeStyle = AGENT;
+        mctx.lineWidth = 1.2;
+        mctx.strokeRect(st.x - 5, st.y - 6, 10, 12);
+        mctx.restore();
+        mctx.fillStyle = rgba(AGENT_HOT, 0.95);
+        for (var u = 0; u < 3; u++) mctx.fillRect(st.x - 3, st.y - 3.8 + u * 3.2, 6, 1.2);
+
+      }
+
+      // Labels in a second pass with real collision avoidance. Fixed offsets
+      // are not enough: Bahrain and Mumbai are far apart in longitude but land
+      // on nearly the same label line, and printed over each other. Majors are
+      // placed first, each label tries above then below, and anything that
+      // still collides is dropped rather than drawn illegibly.
+      if (mw > 560) {
+        mctx.font = "9px ui-monospace, monospace";
+        mctx.fillStyle = rgba(FAINT, 1);
+        var placed = [];
+        var order = sites.slice().sort(function (a, b) {
+          return (b.reg.major ? 1 : 0) - (a.reg.major ? 1 : 0);
+        });
+        for (var L = 0; L < order.length; L++) {
+          var lb = order[L];
+          var txt = lb.reg.id;
+          var tw = mctx.measureText(txt).width;
+          var right = lb.x > mx + mw * 0.7;
+          var lx = lb.x + (right ? -10 : 10);
+          var x0 = right ? lx - tw : lx;
+          var tries = lb.reg.major ? [-9, 16] : [16, -9];
+          var box = null;
+          for (var ti = 0; ti < tries.length; ti++) {
+            var ly = lb.y + tries[ti];
+            var cand = { x: x0 - 2, y: ly - 9, w: tw + 4, h: 12, ly: ly };
+            var hit = false;
+            for (var q = 0; q < placed.length; q++) {
+              var pb = placed[q];
+              if (cand.x < pb.x + pb.w && cand.x + cand.w > pb.x &&
+                  cand.y < pb.y + pb.h && cand.y + cand.h > pb.y) { hit = true; break; }
+            }
+            if (!hit) { box = cand; break; }
+          }
+          if (!box) continue;
+          placed.push(box);
+          mctx.textAlign = right ? "right" : "left";
+          mctx.fillText(txt, lx, box.ly);
+        }
+      }
+
+      // the arena
+      var live = phase === "match";
+      var col = live ? SIGNAL : AGENT;
+      if (live) {
+        var pu = (matchClock % 1.5) / 1.5;
+        mctx.strokeStyle = rgba(SIGNAL, (1 - pu) * 0.7);
+        mctx.lineWidth = 1.4;
+        mctx.beginPath();
+        mctx.arc(hub.x, hub.y, 13 + pu * 40, 0, Math.PI * 2);
+        mctx.stroke();
+      }
+      if (phase === "settle") {
+        var sp = Math.min(phaseT / 2.6, 1);
+        mctx.strokeStyle = rgba(SIGNAL, (1 - sp) * 0.6);
+        mctx.lineWidth = 1;
+        mctx.setLineDash([3, 4]);
+        mctx.beginPath();
+        mctx.arc(hub.x, hub.y, 17 + sp * 80, 0, Math.PI * 2);
+        mctx.stroke();
+        mctx.setLineDash([]);
+      }
+      mctx.save();
+      mctx.shadowColor = col;
+      mctx.shadowBlur = live ? 24 : 14;
+      mctx.strokeStyle = col;
+      mctx.lineWidth = 1.9;
+      mctx.beginPath();
+      mctx.arc(hub.x, hub.y, 12, 0, Math.PI * 2);
+      mctx.stroke();
+      mctx.fillStyle = rgba(col, live ? 0.95 : 0.6);
+      mctx.beginPath();
+      mctx.arc(hub.x, hub.y, 4.2, 0, Math.PI * 2);
+      mctx.fill();
+      mctx.restore();
+      mctx.font = "600 10px ui-monospace, monospace";
+      mctx.fillStyle = rgba(col, 1);
+      mctx.textAlign = "center";
+      mctx.fillText("ARENA", hub.x, hub.y + 29);
+    }
+
+    /* ----------------------------------------------------------- boot --- */
+    if (!layoutMap()) {
+      window.addEventListener("load", function () {
+        if (layoutMap()) { drawMap(0); drawMatch(); }
+      });
+      return;
+    }
+    renderAgents();
+    renderScores();
+    renderChain();
+    renderLedger();
+    setPhase("deploy");
+
+    if (reduced) {
+      // one honest frame, mid-match, so every panel still shows real content
+      for (var i = 0; i < SEATS; i++) {
+        seats.push({ id: "agent_" + hex4(), reg: REGIONS[i * 3].id, color: SEATC[i] });
+      }
+      setPhase("match");
+      matchClock = 4;
+      resetMatch();
+      for (var s2 = 0; s2 < 300; s2++) stepMatch(1 / 60);
+      chain = [1, 1, 1, 1];
+      ledger = [
+        { pool: "pool_" + hex4() + hex4(), sig: hex4() + "…" + hex4() },
+        { pool: "pool_" + hex4() + hex4(), sig: hex4() + "…" + hex4() },
+      ];
+      flights = [{
+        s: sites[6], t: 0.5, sp: 0,
+        id: "agent_" + hex4(), reg: REGIONS[6].id, color: SEATC[1],
+      }];
+      if (elClock) {
+        elClock.textContent = "PushBlock · 0:" + String(Math.floor(matchClock)).padStart(2, "0");
+      }
+      renderAgents();
+      renderScores();
+      renderChain();
+      renderLedger();
+      drawMap(0);
+      drawMatch();
+      window.addEventListener("resize", function () {
+        if (layoutMap()) { drawMap(0); drawMatch(); }
+      }, { passive: true });
+      return;
+    }
+
+    var visible = true, last = 0;
+    var section = sec;
+    if ("IntersectionObserver" in window) {
+      new IntersectionObserver(function (es) {
+        visible = es[0].isIntersecting && !document.hidden;
+      }, { threshold: 0.02 }).observe(section);
+    }
+    document.addEventListener("visibilitychange", function () {
+      visible = !document.hidden;
+    });
+    if ("ResizeObserver" in window) {
+      var rt;
+      new ResizeObserver(function () {
+        clearTimeout(rt);
+        rt = setTimeout(function () { layoutMap(); }, 180);
+      }).observe(root);
+    }
+
+    function frame(t) {
+      requestAnimationFrame(frame);
+      if (!visible) { last = t; return; }
+      if (!last) last = t;
+      var dt = Math.min((t - last) / 1000, 0.05);
+      last = t;
+      tick(dt);
+      drawMap(t);
+      drawMatch();
+    }
+    requestAnimationFrame(frame);
+  })();
+</script>

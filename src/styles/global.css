@@ -1,0 +1,1619 @@
+@import "tailwindcss";
+
+/* ==================================================================
+   MidEarth — "Broadcast from the deck"
+   ------------------------------------------------------------------
+   Two grounds, one instrument. The deck is the agent's side of the
+   glass: dark, lit from within, telemetry everywhere. The stands are
+   the human's side: warm daylight paper, editorial, still.
+   The glass between them is a real material here, not a metaphor.
+   ================================================================== */
+
+@theme {
+  /* -- grounds -----------------------------------------------------
+     Blue-black rather than neutral black, so the ground sits under
+     the brand's cool end instead of fighting it. */
+  --color-void: #04070a; /* deepest, behind everything */
+  --color-deck: #070c11; /* instrument ground, agent side */
+  --color-deck-raise: #0d141b; /* raised panel on the deck */
+  --color-deck-high: #131d25; /* highest panel on the deck */
+  --color-glass: #101922; /* the boundary itself */
+  --color-stands: #edf1ef; /* daylight ground, human side */
+  --color-stands-raise: #f6f8f7;
+  --color-stands-deep: #dde3e0;
+
+  /* -- the two brand hues ------------------------------------------
+     Both are sampled from the logo, whose gradient runs blue → cyan
+     → teal → green → lime. The design system already had exactly two
+     roles and the mark has exactly two ends, so they map one to one:
+     cyan is the machine, green is the match. Nothing else is a hue. */
+  --color-agent: #22c8e8; /* the agent's side of the glass */
+  --color-agent-hot: #7de9f7;
+  --color-agent-deep: #0b6e85;
+
+  --color-signal: #35e084; /* live / in progress / on air */
+  --color-signal-hot: #86f3b4;
+  --color-signal-deep: #12904c;
+
+  /* the far ends of the mark, for gradients only — never as flat fills */
+  --color-brand-blue: #0177be;
+  --color-brand-lime: #9cf216;
+
+  /* -- value ---------------------------------------------------------
+     A third role for money: balances, payouts, settled amounts. Most
+     palettes fold it into the live hue, because two hues is already a
+     lot. `vault` is the one that separates them — see its block. */
+  --color-value: #35e084;
+  --color-value-hot: #86f3b4;
+  --color-value-deep: #12904c;
+
+  /* -- type ------------------------------------------------------- */
+  --color-ink: #0b1013;
+  --color-ink-dim: #4e5a5c;
+  --color-ink-faint: #82908f;
+  --color-paper: #e8eef0;
+  --color-paper-dim: #8da0a9;
+  --color-paper-faint: #5a6b75;
+
+  /* -- lines ------------------------------------------------------ */
+  --color-rule: #1a2530;
+  --color-rule-hot: #26343f;
+  --color-rule-light: #cdd4d1;
+  --color-rule-light-hot: #b4bdb9;
+
+  --font-display: "Archivo", "Archivo Expanded", ui-sans-serif, sans-serif;
+  --font-body: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", monospace;
+
+  --spacing-gutter: 1.5rem;
+}
+
+/* Motion + material constants (outside @theme: not utility-generating) */
+:root {
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* The brand gradient, in one place. Every gradient on the site is a
+     slice of the logo's own ramp, which is what keeps a colourful page
+     from turning into a colourful mess. */
+  --grad-brand: linear-gradient(
+    100deg,
+    var(--color-brand-blue),
+    var(--color-agent) 34%,
+    var(--color-signal) 74%,
+    var(--color-brand-lime)
+  );
+  --grad-brand-soft: linear-gradient(
+    100deg,
+    var(--color-agent) 10%,
+    var(--color-signal) 90%
+  );
+
+  --glow-agent:
+    0 0 0 1px color-mix(in srgb, var(--color-agent) 28%, transparent),
+    0 0 34px -8px color-mix(in srgb, var(--color-agent) 60%, transparent);
+  --glow-signal:
+    0 0 0 1px color-mix(in srgb, var(--color-signal) 30%, transparent),
+    0 0 36px -8px color-mix(in srgb, var(--color-signal) 62%, transparent);
+
+  --shadow-panel:
+    0 1px 0 0 rgba(255, 255, 255, 0.04) inset,
+    0 24px 60px -32px rgba(0, 0, 0, 0.9);
+  --shadow-lift:
+    0 1px 0 0 rgba(255, 255, 255, 0.05) inset,
+    0 40px 80px -40px rgba(0, 0, 0, 1);
+
+  --noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ================================ light theme ===========================
+   The concept does not invert, it re-lights. The agent's ground becomes a
+   clinical cool white — an instrument panel under lab light — and the
+   human's stands stay warm paper. Two grounds, still distinguishable by
+   temperature and a step of value, now both lit.
+
+   `data-theme` is resolved before first paint by the inline script in
+   Base.astro, which reads the stored choice or falls back to the OS
+   setting. With JS off the site stays dark, which is the brand default.
+   ======================================================================== */
+
+html[data-theme="light"] {
+  color-scheme: light;
+
+  /* -- grounds ---------------------------------------------------- */
+  --color-void: #fbfdfc; /* brightest, behind everything */
+  --color-deck: #f2f6f5; /* instrument ground, agent side — cool */
+  --color-deck-raise: #e9efee;
+  --color-deck-high: #dfe8e6;
+  --color-glass: #e6eeec;
+  --color-stands: #e2eae6; /* daylight ground, human side */
+  --color-stands-raise: #eef4f2;
+  --color-stands-deep: #d0dbd6;
+
+  /* -- the same two brand hues, darkened to hold contrast on light -- */
+  --color-agent: #0b7f99;
+  --color-agent-hot: #064f60;
+  --color-agent-deep: #7fc4d4;
+
+  --color-signal: #0f8a4a;
+  --color-signal-hot: #0a6335;
+  --color-signal-deep: #7fd3a4;
+
+  --color-brand-blue: #0166a4;
+  --color-brand-lime: #5f9a0d;
+
+  /* -- type: `paper` is type on the deck, `ink` is type on the stands */
+  --color-paper: #0d1417;
+  --color-paper-dim: #4d5d63;
+  --color-paper-faint: #7a8a90;
+  --color-ink: #0b1215;
+  --color-ink-dim: #4a5a58;
+  --color-ink-faint: #7c8c88;
+
+  /* -- lines ------------------------------------------------------ */
+  --color-rule: #d3dedb;
+  --color-rule-hot: #bccac6;
+  --color-rule-light: #c7d4cf;
+  --color-rule-light-hot: #adbdb7;
+
+  /* Light needs shallower, warmer shadow and a real top highlight;
+     the dark theme's black-on-black depth reads as dirt here. */
+  --shadow-panel:
+    0 1px 0 0 rgba(255, 255, 255, 0.7) inset,
+    0 18px 40px -28px rgba(20, 24, 28, 0.3);
+  --shadow-lift:
+    0 1px 0 0 rgba(255, 255, 255, 0.8) inset,
+    0 30px 60px -32px rgba(20, 24, 28, 0.38);
+
+  /* Glow is a dark-medium effect. On light it becomes a soft shadow. */
+  --glow-agent:
+    0 0 0 1px color-mix(in srgb, var(--color-agent) 22%, transparent),
+    0 12px 28px -14px color-mix(in srgb, var(--color-agent) 55%, transparent);
+  --glow-signal:
+    0 0 0 1px color-mix(in srgb, var(--color-signal) 26%, transparent),
+    0 12px 28px -14px color-mix(in srgb, var(--color-signal) 50%, transparent);
+
+  --color-value: #0f8a4a;
+  --color-value-hot: #0a6335;
+  --color-value-deep: #7fd3a4;
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+/* Atmosphere is tuned for a dark room. On light it has to be pulled right
+   back or the drifting blobs read as smudges rather than as light. */
+html[data-theme="light"] .atmos-aurora::before,
+html[data-theme="light"] .atmos-aurora::after,
+html[data-theme="light"] .atmos-aurora > i {
+  opacity: 0.2;
+}
+html[data-theme="light"] .atmos-grid {
+  opacity: 0.3;
+}
+html[data-theme="light"] .atmos-vignette {
+  opacity: 0.45;
+}
+html[data-theme="light"] .atmos-noise {
+  mix-blend-mode: multiply;
+  opacity: 0.028;
+}
+/* The light theme's brand ramp is deep teal to deep green, so the solid
+   button needs light type on it — dark type only works on the bright
+   dark-theme ramp. */
+html[data-theme="light"] .btn-solid,
+html[data-theme="light"] .btn-solid.on-agent {
+  color: #fbfdfc;
+}
+html[data-theme="light"] .seam::after {
+  opacity: 0.3;
+}
+html[data-theme="light"] .glass-panel::before {
+  background: linear-gradient(
+    115deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.5) 45%,
+    transparent 60%
+  );
+}
+
+/* ================================ ember theme ===========================
+   A third palette, taken from the String Fintech design system (the same
+   owner's other product), so the two sites share a family resemblance.
+
+   The mapping is not arbitrary: String names its blue `--machine`, which is
+   exactly this site's *agent* role, and its orange is the attention colour,
+   which is this site's *live* role. Same two-role structure, different hues.
+
+     String            ->  MidEarth
+     --machine #4C7DFF ->  --color-agent    (the agent's side of the glass)
+     --brand   #F44E04 ->  --color-signal   (live / in progress / on air)
+     --gold    #E8A33D ->  the warm end of the gradient ramp
+   ======================================================================== */
+
+html[data-theme="ember"] {
+  color-scheme: dark;
+
+  --color-void: #06070a;
+  --color-deck: #0a0c12;
+  --color-deck-raise: #0e1119;
+  --color-deck-high: #141822;
+  --color-glass: #11151d;
+  --color-stands: #e8e6e1;
+  --color-stands-raise: #f2f0ec;
+  --color-stands-deep: #d6d3cb;
+
+  --color-agent: #4c7dff;
+  --color-agent-hot: #8ba7ff;
+  --color-agent-deep: #24408f;
+
+  --color-signal: #f44e04;
+  --color-signal-hot: #ff8038;
+  --color-signal-deep: #8f2a00;
+
+  --color-brand-blue: #2b5bd7;
+  --color-brand-lime: #e8a33d;
+
+  --color-ink: #0c0d10;
+  --color-ink-dim: #55585f;
+  --color-ink-faint: #8a8d94;
+  --color-paper: #e8e6e1;
+  --color-paper-dim: #a6adba;
+  --color-paper-faint: #8e96a5;
+
+  --color-rule: #1a1d25;
+  --color-rule-hot: #262a34;
+  --color-rule-light: #cfccc5;
+  --color-rule-light-hot: #b7b3aa;
+
+  --color-value: #f44e04;
+  --color-value-hot: #ff8038;
+  --color-value-deep: #8f2a00;
+}
+
+/* Blue and orange are opposite hues, so a gradient between them interpolates
+   through a muddy mauve — visible straight away on the hero's washed word.
+   String itself never ramps between them; it uses both as flat accents. So
+   ember's ramp stays on the warm side (orange → gold) and the blue remains a
+   flat accent, which is both cleaner and truer to the source system. */
+html[data-theme="ember"] {
+  --grad-brand: linear-gradient(
+    100deg,
+    var(--color-signal-deep),
+    var(--color-signal) 30%,
+    var(--color-signal-hot) 68%,
+    var(--color-brand-lime)
+  );
+  --grad-brand-soft: linear-gradient(
+    100deg,
+    var(--color-signal) 8%,
+    var(--color-signal-hot) 60%,
+    var(--color-brand-lime) 100%
+  );
+}
+
+/* Solid buttons sit on the orange end of that ramp, which needs light type. */
+html[data-theme="ember"] .btn-solid,
+html[data-theme="ember"] .btn-solid.on-agent {
+  color: #fff;
+}
+
+/* =============================== circuit theme ==========================
+   Taken from the circuit-globe artwork. The lesson of that image is not the
+   green — it is that everything structural is METAL and colour appears only
+   where there is light. Chrome traces carry the composition; the emerald is
+   a couple of percent of the pixels at near-maximum saturation.
+
+   So here the agent role is brushed chrome rather than a hue, and the live
+   role is one electric emerald. That is the same formula as a monochrome
+   palette with a single accent — the difference from the red version is that
+   emerald agrees with the blue-green logo instead of fighting it.
+   ======================================================================== */
+
+html[data-theme="circuit"] {
+  color-scheme: dark;
+
+  --color-void: #020405;
+  --color-deck: #06090b;
+  --color-deck-raise: #0c1114;
+  --color-deck-high: #131a1e;
+  --color-glass: #0a1013;
+  --color-stands: #e9edec;
+  --color-stands-raise: #f4f7f6;
+  --color-stands-deep: #d5dbda;
+
+  /* the machine, as brushed chrome */
+  --color-agent: #9fb2bd;
+  --color-agent-hot: #d7e3ea;
+  --color-agent-deep: #4a5a64;
+
+  /* the only real hue on the page */
+  --color-signal: #00e58c;
+  --color-signal-hot: #6bffc2;
+  --color-signal-deep: #067a4b;
+
+  --color-brand-blue: #6e8a99;
+  --color-brand-lime: #00ffa3;
+
+  --color-ink: #05090a;
+  --color-ink-dim: #4e5a5e;
+  --color-ink-faint: #7f8c90;
+  --color-paper: #dfe9ec;
+  --color-paper-dim: #8b9aa1;
+  --color-paper-faint: #57666d;
+
+  --color-rule: #12191d;
+  --color-rule-hot: #1e282e;
+  --color-rule-light: #cbd4d3;
+  --color-rule-light-hot: #b0bab9;
+
+  --color-value: #00e58c;
+  --color-value-hot: #6bffc2;
+  --color-value-deep: #067a4b;
+}
+
+/* Chrome lighting up into emerald — the traces on the globe, as a ramp. */
+html[data-theme="circuit"] {
+  --grad-brand: linear-gradient(
+    100deg,
+    var(--color-agent-deep),
+    var(--color-agent) 28%,
+    var(--color-signal) 76%,
+    var(--color-brand-lime)
+  );
+  --grad-brand-soft: linear-gradient(
+    100deg,
+    var(--color-agent) 5%,
+    var(--color-signal) 95%
+  );
+}
+
+/* =============================== orbit theme ============================
+   The circuit family, pushed further: a truer black, a colder chrome and a
+   hotter emerald. Same formula — metal structure, one hue where the light is
+   — but with more separation between the two, which suits the globe's orbit
+   ring and its arena flares.
+   ======================================================================== */
+
+html[data-theme="orbit"] {
+  color-scheme: dark;
+
+  --color-void: #000205;
+  --color-deck: #04080b;
+  --color-deck-raise: #0a1015;
+  --color-deck-high: #10181e;
+  --color-glass: #081015;
+  --color-stands: #e7edec;
+  --color-stands-raise: #f2f7f6;
+  --color-stands-deep: #d2dbda;
+
+  --color-agent: #a8becb;
+  --color-agent-hot: #e0eef6;
+  --color-agent-deep: #4e6270;
+
+  --color-signal: #00ffa3;
+  --color-signal-hot: #8fffd1;
+  --color-signal-deep: #058c56;
+
+  --color-brand-blue: #6f93a6;
+  --color-brand-lime: #00ffc6;
+
+  --color-ink: #04080a;
+  --color-ink-dim: #4b585d;
+  --color-ink-faint: #7c8b90;
+  --color-paper: #dce9ee;
+  --color-paper-dim: #8797a0;
+  --color-paper-faint: #55656d;
+
+  --color-rule: #0f171c;
+  --color-rule-hot: #1b262d;
+  --color-rule-light: #c9d3d2;
+  --color-rule-light-hot: #aeb9b8;
+
+  --color-value: #00ffa3;
+  --color-value-hot: #8fffd1;
+  --color-value-deep: #058c56;
+}
+
+html[data-theme="orbit"] {
+  --grad-brand: linear-gradient(
+    100deg,
+    var(--color-agent-deep),
+    var(--color-agent) 26%,
+    var(--color-signal) 74%,
+    var(--color-brand-lime)
+  );
+  --grad-brand-soft: linear-gradient(
+    100deg,
+    var(--color-agent) 4%,
+    var(--color-signal) 96%
+  );
+}
+
+/* =============================== vault theme ============================
+   The palette the money story actually needs.
+
+   Every other theme runs two roles — the machine, and whatever is live. This
+   one runs three, because the product is about value moving and value had no
+   colour of its own:
+
+     cyan   the machine        agents, endpoints, structure
+     green  live               in progress, on air
+     gold   value              balances, payouts, settled amounts
+
+   Gold is the rarest thing on the page by a wide margin. If it is doing any
+   work other than "this is money", it is being misused.
+
+   The ground is a genuine ramp rather than one flat black, and elevation
+   carries a faint cyan ambient instead of pure black shadow — which is most
+   of why panels here read as lit objects rather than boxes.
+   ======================================================================== */
+
+html[data-theme="vault"] {
+  color-scheme: dark;
+
+  --color-void: #03060a;
+  --color-deck: #060b10;
+  --color-deck-raise: #0b131a;
+  --color-deck-high: #121c25;
+  --color-glass: #0a121a;
+  --color-stands: #e8edec;
+  --color-stands-raise: #f4f7f6;
+  --color-stands-deep: #d3dad8;
+
+  --color-agent: #5ad1e6;
+  --color-agent-hot: #a6ecf7;
+  --color-agent-deep: #1d6c7e;
+
+  --color-signal: #2fe38c;
+  --color-signal-hot: #86f5be;
+  --color-signal-deep: #0e8a52;
+
+  --color-value: #e3b341;
+  --color-value-hot: #f6d183;
+  --color-value-deep: #8a6613;
+
+  --color-brand-blue: #1f7fd0;
+  --color-brand-lime: #e3b341;
+
+  --color-ink: #061014;
+  --color-ink-dim: #4a5a5f;
+  --color-ink-faint: #7d8d91;
+  --color-paper: #e6f0f3;
+  --color-paper-dim: #93a6ae;
+  --color-paper-faint: #5d7078;
+
+  --color-rule: #14202a;
+  --color-rule-hot: #203040;
+  --color-rule-light: #c8d2d0;
+  --color-rule-light-hot: #adb8b6;
+
+  /* elevation with a cyan ambient — pure black shadow on near-black ground
+     reads as a smudge, this reads as light falling off an edge */
+  --shadow-panel:
+    0 1px 0 0 rgba(166, 236, 247, 0.055) inset,
+    0 26px 60px -34px rgba(0, 0, 0, 0.95),
+    0 0 44px -30px rgba(90, 209, 230, 0.42);
+  --shadow-lift:
+    0 1px 0 0 rgba(166, 236, 247, 0.07) inset,
+    0 42px 84px -42px rgba(0, 0, 0, 1),
+    0 0 60px -32px rgba(90, 209, 230, 0.5);
+
+  /* the mark's ramp, carried through to where the money is */
+  --grad-brand: linear-gradient(
+    100deg,
+    var(--color-brand-blue),
+    var(--color-agent) 30%,
+    var(--color-signal) 66%,
+    var(--color-value)
+  );
+  --grad-brand-soft: linear-gradient(
+    100deg,
+    var(--color-agent) 6%,
+    var(--color-signal) 58%,
+    var(--color-value) 100%
+  );
+}
+
+/* value, wherever a component asks for it */
+.val {
+  color: var(--value-fg, var(--color-value));
+}
+
+/* ------------------------------- base ----------------------------------- */
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+  scrollbar-color: var(--color-rule-hot) var(--color-void);
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 17px;
+  line-height: 1.55;
+  letter-spacing: -0.006em;
+  background: var(--color-deck);
+  color: var(--color-paper);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: var(--color-signal);
+  color: var(--color-void);
+}
+
+::-webkit-scrollbar {
+  width: 11px;
+  height: 11px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-void);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-rule-hot);
+  border: 3px solid var(--color-void);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-agent-deep);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-signal);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+a {
+  color: inherit;
+}
+
+img,
+svg,
+canvas {
+  display: block;
+  max-width: 100%;
+}
+
+/* ============================== atmosphere ==============================
+   Depth for the deck. Absolutely positioned inside a section, never fixed,
+   so light and dark bands can sit next to each other honestly.
+   ======================================================================== */
+
+.atmos {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.has-atmos {
+  position: relative;
+  isolation: isolate;
+}
+.has-atmos > *:not(.atmos) {
+  position: relative;
+  z-index: 1;
+}
+
+/* slow-drifting light behind the instrument */
+.atmos-aurora::before,
+.atmos-aurora::after,
+.atmos-aurora > i {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.62;
+  will-change: transform;
+}
+.atmos-aurora::before {
+  width: 52vw;
+  height: 52vw;
+  left: -12vw;
+  top: -18vw;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--color-agent) 62%, transparent),
+    transparent 68%
+  );
+  animation: drift-a 34s var(--ease-in-out) infinite;
+}
+.atmos-aurora::after {
+  width: 44vw;
+  height: 44vw;
+  right: -10vw;
+  bottom: -22vw;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--color-signal) 52%, transparent),
+    transparent 68%
+  );
+  animation: drift-b 44s var(--ease-in-out) infinite;
+}
+.atmos-aurora > i {
+  width: 34vw;
+  height: 34vw;
+  left: 46%;
+  top: 32%;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--color-brand-blue) 55%, transparent),
+    transparent 70%
+  );
+  animation: drift-c 52s var(--ease-in-out) infinite;
+}
+
+@keyframes drift-a {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(8vw, 6vw, 0) scale(1.18);
+  }
+}
+@keyframes drift-b {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1.1);
+  }
+  50% {
+    transform: translate3d(-10vw, -7vw, 0) scale(0.9);
+  }
+}
+@keyframes drift-c {
+  0%,
+  100% {
+    transform: translate3d(-4vw, 0, 0) scale(0.95);
+  }
+  50% {
+    transform: translate3d(6vw, -8vw, 0) scale(1.2);
+  }
+}
+
+/* blueprint grid, faded at the edges */
+.atmos-grid {
+  position: absolute;
+  inset: -1px;
+  background-image:
+    linear-gradient(
+      to right,
+      color-mix(in srgb, var(--color-agent) 12%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--color-agent) 12%, transparent) 1px,
+      transparent 1px
+    );
+  background-size: 64px 64px;
+  -webkit-mask-image: radial-gradient(ellipse 90% 70% at 50% 40%, #000 5%, transparent 72%);
+  mask-image: radial-gradient(ellipse 90% 70% at 50% 40%, #000 5%, transparent 72%);
+  opacity: 0.55;
+}
+
+/* horizon glow along the bottom seam of a band */
+.atmos-horizon {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    color-mix(in srgb, var(--color-agent) 55%, transparent) 25%,
+    color-mix(in srgb, var(--color-agent) 65%, transparent) 50%,
+    color-mix(in srgb, var(--color-agent) 55%, transparent) 75%,
+    transparent
+  );
+}
+.atmos-horizon::after {
+  content: "";
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  bottom: 0;
+  height: 90px;
+  background: radial-gradient(
+    ellipse at bottom,
+    color-mix(in srgb, var(--color-agent) 18%, transparent),
+    transparent 70%
+  );
+}
+
+/* A wide, soft beam crossing the ground — the sweep of an instrument light.
+   Long period on purpose: it should be noticed only on second glance. */
+.atmos-beam {
+  position: absolute;
+  top: -40%;
+  bottom: -40%;
+  width: 42%;
+  left: -50%;
+  background: linear-gradient(
+    100deg,
+    transparent,
+    color-mix(in srgb, var(--color-agent) 16%, transparent) 45%,
+    color-mix(in srgb, var(--color-signal) 12%, transparent) 60%,
+    transparent
+  );
+  filter: blur(28px);
+  transform: rotate(12deg);
+  animation: beam 19s var(--ease-in-out) infinite;
+}
+@keyframes beam {
+  0% {
+    left: -55%;
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    left: 115%;
+    opacity: 0;
+  }
+}
+html[data-theme="light"] .atmos-beam {
+  opacity: 0.55;
+}
+
+/* film grain */
+.atmos-noise {
+  position: absolute;
+  inset: 0;
+  background-image: var(--noise);
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+}
+
+/* darkening at the frame edges */
+.atmos-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 100% 80% at 50% 45%, transparent 40%, var(--color-void) 100%);
+  opacity: 0.75;
+}
+
+/* light-side atmosphere: paper tooth, no glow */
+.atmos-paper {
+  position: absolute;
+  inset: 0;
+  background-image: var(--noise);
+  opacity: 0.05;
+  mix-blend-mode: multiply;
+}
+
+/* ============================== type roles ============================== */
+
+.display {
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 112;
+  font-weight: 700;
+  line-height: 0.9;
+  letter-spacing: -0.028em;
+  text-wrap: balance;
+}
+
+.display-xxl {
+  font-size: clamp(3.1rem, 11vw, 10rem);
+  line-height: 0.84;
+  letter-spacing: -0.04em;
+  font-variation-settings: "wdth" 100;
+}
+.display-xl {
+  font-size: clamp(2.6rem, 7.4vw, 6rem);
+}
+.display-l {
+  font-size: clamp(2.1rem, 5vw, 3.8rem);
+}
+.display-m {
+  font-size: clamp(1.5rem, 2.6vw, 2.15rem);
+}
+.display-s {
+  font-size: clamp(1.15rem, 1.8vw, 1.4rem);
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+}
+
+/* The machine speaking. Never decoration. */
+.mono {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  font-variant-ligatures: none;
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+/* eyebrow gets a leading tick so it reads as a rail label */
+.eyebrow::before {
+  content: "";
+  width: 1.4rem;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.55;
+  flex: none;
+}
+.eyebrow.bare::before {
+  display: none;
+}
+
+.lede {
+  font-size: clamp(1.06rem, 1.55vw, 1.32rem);
+  line-height: 1.5;
+  max-width: 46ch;
+  letter-spacing: -0.01em;
+}
+
+/* gradient wash for one word in a headline — used sparingly */
+.wash-agent {
+  background: linear-gradient(
+    100deg,
+    var(--color-agent-hot),
+    var(--color-agent) 55%,
+    var(--color-agent-deep)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.wash-brand {
+  background: var(--grad-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.wash-signal {
+  background: linear-gradient(
+    100deg,
+    var(--color-signal-hot),
+    var(--color-signal) 55%,
+    var(--color-signal-deep)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ============================== two grounds ============================= */
+
+.ground-deck {
+  background: var(--color-deck);
+  color: var(--color-paper);
+  --hairline: var(--color-rule);
+  --hairline-hot: var(--color-rule-hot);
+  --dim: var(--color-paper-dim);
+  --faint: var(--color-paper-faint);
+  --raise: var(--color-deck-raise);
+  --strong: var(--color-agent-hot);
+  --signal-fg: var(--color-signal);
+  --value-fg: var(--color-value);
+}
+
+.ground-void {
+  background: var(--color-void);
+  color: var(--color-paper);
+  --hairline: var(--color-rule);
+  --hairline-hot: var(--color-rule-hot);
+  --dim: var(--color-paper-dim);
+  --faint: var(--color-paper-faint);
+  --raise: var(--color-deck);
+  --strong: var(--color-agent-hot);
+  --signal-fg: var(--color-signal);
+  --value-fg: var(--color-value);
+}
+
+.ground-stands {
+  background: var(--color-stands);
+  color: var(--color-ink);
+  --hairline: var(--color-rule-light);
+  --hairline-hot: var(--color-rule-light-hot);
+  --dim: var(--color-ink-dim);
+  --faint: var(--color-ink-faint);
+  --raise: var(--color-stands-raise);
+  --strong: var(--color-ink);
+  --signal-fg: var(--color-signal-deep);
+  --value-fg: var(--color-value-deep);
+}
+
+.dim {
+  color: var(--dim, var(--color-paper-dim));
+}
+.faint {
+  color: var(--faint, var(--color-paper-faint));
+}
+.hairline {
+  border-color: var(--hairline, var(--color-rule));
+}
+
+/* ============================== structure =============================== */
+
+.wrap {
+  width: 100%;
+  max-width: 1180px;
+  margin-inline: auto;
+  padding-inline: var(--spacing-gutter);
+}
+
+.wrap-wide {
+  width: 100%;
+  max-width: 1480px;
+  margin-inline: auto;
+  padding-inline: var(--spacing-gutter);
+}
+
+/* Single source of vertical rhythm. Do not set section padding elsewhere. */
+.band {
+  padding-block: clamp(4.5rem, 10vw, 9rem);
+}
+.band-tight {
+  padding-block: clamp(2.5rem, 5vw, 4rem);
+}
+
+.rule-top {
+  border-top: 1px solid var(--hairline, var(--color-rule));
+}
+
+/* numbered section rail — the site is an instrument, so sections are indexed */
+.band-index {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-bottom: clamp(1.5rem, 3vw, 2.4rem);
+}
+.band-index::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, var(--hairline), transparent);
+}
+.band-index b {
+  color: var(--strong);
+  font-weight: 500;
+}
+
+/* ============================== materials =============================== */
+
+/* real glass: the boundary as a drawable surface */
+.glass-panel {
+  position: relative;
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--color-deck-high) 92%, transparent),
+    color-mix(in srgb, var(--color-deck) 96%, transparent)
+  );
+  border: 1px solid var(--color-rule);
+  box-shadow: var(--shadow-panel);
+  backdrop-filter: blur(14px);
+  overflow: hidden;
+}
+/* the specular streak that makes it read as glass and not as a box */
+.glass-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    115deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.045) 45%,
+    transparent 60%
+  );
+  pointer-events: none;
+}
+
+.panel {
+  background: var(--raise);
+  border: 1px solid var(--hairline);
+}
+
+/* HUD corner brackets — machined, not decorative rounding */
+.bracket {
+  position: relative;
+}
+.bracket::before,
+.bracket::after {
+  content: "";
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--color-agent-deep);
+  opacity: 0.75;
+  transition: all 0.4s var(--ease-out);
+}
+.bracket::before {
+  top: -1px;
+  left: -1px;
+  border-right: 0;
+  border-bottom: 0;
+}
+.bracket::after {
+  bottom: -1px;
+  right: -1px;
+  border-left: 0;
+  border-top: 0;
+}
+.bracket:hover::before,
+.bracket:hover::after {
+  width: 20px;
+  height: 20px;
+  opacity: 1;
+}
+
+/* a card that lifts off the ground on hover */
+.lift {
+  transition:
+    transform 0.5s var(--ease-out),
+    border-color 0.4s var(--ease-out),
+    box-shadow 0.5s var(--ease-out);
+}
+.lift:hover {
+  transform: translateY(-4px);
+  border-color: var(--hairline-hot);
+  box-shadow: var(--shadow-lift);
+}
+
+/* status LED */
+.led {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 0 currentColor;
+  animation: led 2s var(--ease-out) infinite;
+  flex: none;
+}
+@keyframes led {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 70%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 7px transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+/* ============================== controls ================================ */
+
+.btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  padding: 0.85rem 1.6rem;
+  border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
+  background: color-mix(in srgb, currentColor 6%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 9999px;
+  text-decoration: none;
+  overflow: hidden;
+  isolation: isolate;
+  transition:
+    color 0.36s var(--ease-out),
+    transform 0.36s var(--ease-out),
+    box-shadow 0.36s var(--ease-out),
+    border-color 0.36s var(--ease-out),
+    background-color 0.36s var(--ease-out);
+}
+/* the fill sweeps in from the left rather than snapping */
+.btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.42s var(--ease-out);
+  z-index: -1;
+  border-radius: inherit;
+}
+.btn:hover::before {
+  transform: scaleX(1);
+}
+.btn:active {
+  transform: translateY(1px);
+}
+.btn .arw {
+  transition: transform 0.36s var(--ease-out);
+}
+.btn:hover .arw {
+  transform: translateX(4px);
+}
+
+.btn-agent {
+  color: var(--color-agent);
+}
+.btn-agent:hover {
+  color: var(--color-deck);
+  box-shadow: var(--glow-agent);
+}
+.btn-ink {
+  color: var(--color-ink);
+}
+.btn-ink:hover {
+  color: var(--color-stands);
+}
+.btn-ink:hover::before {
+  background: var(--color-ink);
+}
+.btn-paper {
+  color: var(--color-paper);
+}
+.btn-paper:hover {
+  color: var(--color-deck);
+}
+.btn-signal {
+  color: var(--color-signal);
+}
+.btn-signal:hover {
+  color: var(--color-void);
+  box-shadow: var(--glow-signal);
+}
+
+/* Solid variant for the one primary action per view. Light, not red: a
+   call to action is not a live state, and red must stay rare to mean
+   anything. `.on-agent` is kept as an alias so existing markup still works. */
+.btn-solid,
+.btn-solid.on-agent {
+  border-color: transparent;
+  color: #04140f;
+  background: var(--grad-brand-soft);
+  background-size: 160% 100%;
+  background-position: 0% 0%;
+  border-radius: 9999px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition:
+    background-position 0.6s var(--ease-out),
+    box-shadow 0.36s var(--ease-out),
+    transform 0.36s var(--ease-out);
+}
+/* the sweep is the gradient sliding, not a second layer fading in */
+.btn-solid::before,
+.btn-solid.on-agent::before {
+  display: none;
+}
+.btn-solid:hover,
+.btn-solid.on-agent:hover {
+  background-position: 100% 0%;
+}
+.btn-solid:hover {
+  color: var(--color-void);
+  box-shadow: var(--glow-agent);
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 0.28rem 0.6rem;
+  border: 1px solid currentColor;
+}
+/* .card is a grid, so a tag would otherwise stretch the full column width */
+.card > .tag,
+.card > .tag-live {
+  justify-self: start;
+}
+
+.tag-live {
+  color: var(--signal-fg, var(--color-signal));
+  background: color-mix(in srgb, var(--signal-fg, var(--color-signal)) 10%, transparent);
+}
+
+/* ========================== code / endpoints ============================ */
+
+.code {
+  position: relative;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  line-height: 1.75;
+  background:
+    linear-gradient(color-mix(in srgb, var(--color-agent) 4%, transparent), transparent),
+    var(--color-void);
+  border: 1px solid var(--color-rule);
+  color: var(--color-paper-dim);
+  padding: 1.15rem 1.2rem;
+  overflow-x: auto;
+  white-space: pre;
+  tab-size: 2;
+  box-shadow: var(--shadow-panel);
+}
+/* left gutter bar, like a terminal margin */
+.code::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, var(--color-agent), transparent);
+  opacity: 0.5;
+}
+/* Syntax is built from luminance and weight, never hue — red is reserved for
+   live state, and code blocks appear on nearly every page. Four steps:
+   comment (faintest) → body → path → verb (brightest, heaviest). */
+/* Injected by script; the block is fine without it. */
+.copy-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-paper-faint);
+  background: color-mix(in srgb, var(--color-void) 80%, transparent);
+  border: 1px solid var(--color-rule-hot);
+  padding: 0.3rem 0.55rem;
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 0.25s var(--ease-out),
+    color 0.25s var(--ease-out),
+    border-color 0.25s var(--ease-out);
+}
+.code:hover .copy-btn,
+.copy-btn:focus-visible {
+  opacity: 1;
+}
+.copy-btn:hover {
+  color: var(--color-agent);
+  border-color: var(--color-agent);
+}
+.copy-btn.ok {
+  color: var(--color-signal);
+  border-color: var(--color-signal);
+  opacity: 1;
+}
+
+.code .verb {
+  color: var(--color-agent-hot);
+  font-weight: 700;
+}
+.code .path {
+  color: var(--color-agent);
+}
+.code .cmt {
+  color: var(--color-paper-faint);
+}
+
+/* ================================ links ================================= */
+
+.link {
+  position: relative;
+  text-decoration: none;
+  padding-bottom: 2px;
+  background-image: linear-gradient(currentColor, currentColor);
+  background-size: 100% 1px;
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  transition:
+    background-size 0.4s var(--ease-out),
+    color 0.3s var(--ease-out);
+}
+.link:hover {
+  background-size: 0% 1px;
+  color: var(--strong, var(--color-agent-hot));
+}
+
+/* ================================ the seam ==============================
+   Home and Live only: the two grounds meet and the boundary is visible.
+   ======================================================================== */
+
+.seam {
+  position: relative;
+}
+.seam::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  left: 50%;
+  width: 1px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    var(--color-agent) 14%,
+    var(--color-signal) 86%,
+    transparent
+  );
+  opacity: 0.65;
+  z-index: 2;
+}
+/* a bead of light travels the seam, slowly */
+.seam::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 3px;
+  height: 90px;
+  margin-left: -1px;
+  background: linear-gradient(to bottom, transparent, var(--color-agent-hot), transparent);
+  filter: blur(1px);
+  z-index: 3;
+  animation: bead 7s linear infinite;
+}
+@keyframes bead {
+  0% {
+    top: -90px;
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    top: 100%;
+    opacity: 0;
+  }
+}
+
+@media (max-width: 860px) {
+  .seam::before {
+    inset-block: auto;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(
+      to right,
+      transparent,
+      var(--color-agent) 12%,
+      var(--color-agent) 88%,
+      transparent
+    );
+  }
+  .seam::after {
+    display: none;
+  }
+}
+
+/* ================================ motion ================================ */
+
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(22px);
+  transition:
+    opacity 0.85s var(--ease-out),
+    transform 0.85s var(--ease-out),
+    filter 0.85s var(--ease-out);
+  transition-delay: var(--d, 0ms);
+  filter: blur(6px);
+}
+[data-reveal="left"] {
+  transform: translateX(-26px);
+}
+[data-reveal="right"] {
+  transform: translateX(26px);
+}
+[data-reveal="scale"] {
+  transform: scale(0.96);
+}
+[data-reveal].is-in {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+
+/* headline that wipes up line by line */
+.line-mask {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.06em;
+}
+.line-mask > span {
+  display: block;
+  transform: translateY(105%);
+  transition: transform 1s var(--ease-out);
+  transition-delay: var(--d, 0ms);
+}
+.is-in .line-mask > span,
+.line-mask.is-in > span {
+  transform: none;
+}
+
+/* horizontal ticker */
+.marquee {
+  display: flex;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
+}
+.marquee-track {
+  display: flex;
+  flex: none;
+  gap: 3rem;
+  padding-right: 3rem;
+  animation: slide 46s linear infinite;
+  will-change: transform;
+}
+.marquee:hover .marquee-track {
+  animation-play-state: paused;
+}
+@keyframes slide {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* scanline sweep for anything behind glass */
+@keyframes scan {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(700%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  [data-reveal] {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+  .line-mask > span {
+    transform: none;
+  }
+}
+
+/* =========================== shared page blocks ========================= */
+
+.page-head {
+  display: grid;
+  gap: 1.15rem;
+  max-width: 72ch;
+}
+.page-head > * {
+  margin: 0;
+}
+
+.band-head {
+  max-width: 66ch;
+  margin-bottom: clamp(2rem, 4vw, 3.2rem);
+  display: grid;
+  gap: 1rem;
+}
+.band-head > * {
+  margin: 0;
+}
+
+.card {
+  position: relative;
+  border: 1px solid var(--hairline, var(--color-rule));
+  background: var(--raise);
+  padding: clamp(1.35rem, 2.4vw, 2rem);
+  display: grid;
+  gap: 0.9rem;
+  align-content: start;
+  transition:
+    transform 0.5s var(--ease-out),
+    border-color 0.4s var(--ease-out),
+    box-shadow 0.5s var(--ease-out);
+}
+.card:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--color-agent) 55%, transparent);
+  box-shadow:
+    var(--shadow-panel),
+    0 0 30px -14px color-mix(in srgb, var(--color-agent) 60%, transparent);
+}
+.card > * {
+  margin: 0;
+}
+.card h3 {
+  font-size: 1.12rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.kv {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+}
+.kv > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid var(--hairline, var(--color-rule));
+  padding-bottom: 0.4rem;
+}
+.kv dt {
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.kv dd {
+  margin: 0;
+  text-align: right;
+}
+
+.prose p {
+  max-width: 68ch;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  gap: clamp(1rem, 2vw, 1.75rem);
+}
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+  gap: clamp(1rem, 2vw, 1.75rem);
+}
+
+/* placeholder tokens stay visibly unfilled — the honesty rule, made loud */
+.ph {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  color: var(--color-signal);
+  background: color-mix(in srgb, var(--color-signal) 12%, transparent);
+  border-bottom: 1px dashed color-mix(in srgb, var(--color-signal) 60%, transparent);
+  padding: 0 0.25em;
+}

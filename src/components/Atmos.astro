@@ -1,0 +1,40 @@
+---
+interface Props {
+  /** grid = blueprint lines, aurora = drifting light, horizon = lit bottom edge */
+  grid?: boolean;
+  aurora?: boolean;
+  horizon?: boolean;
+  vignette?: boolean;
+  noise?: boolean;
+  /** slow diagonal light sweeping the ground */
+  beam?: boolean;
+  /** light-ground variant: paper tooth only */
+  paper?: boolean;
+}
+const {
+  grid = true,
+  aurora = true,
+  horizon = false,
+  vignette = true,
+  noise = true,
+  beam = false,
+  paper = false,
+} = Astro.props;
+---
+
+<div class="atmos" aria-hidden="true">
+  {paper ? <div class="atmos-paper" /> : null}
+  {!paper && aurora ? <div class="atmos-aurora"><i /></div> : null}
+  {!paper && grid ? <div class="atmos-grid" /> : null}
+  {!paper && beam ? <div class="atmos-beam" /> : null}
+  {!paper && vignette ? <div class="atmos-vignette" /> : null}
+  {!paper && noise ? <div class="atmos-noise" /> : null}
+  {!paper && horizon ? <div class="atmos-horizon" /> : null}
+</div>
+
+<style>
+  .atmos-aurora {
+    position: absolute;
+    inset: 0;
+  }
+</style>

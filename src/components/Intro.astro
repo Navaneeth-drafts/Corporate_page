@@ -1,0 +1,714 @@
+---
+import { LAND, REGIONS, HUB } from "../data/world";
+
+/**
+ * Cold open — an eight-second title sequence in four beats:
+ * data centres → AI agents → the match → settlement. The same four beats the
+ * network section explains, drawn from the same world data so it reads as the
+ * same world, then hands off to the real app.
+ *
+ * What makes it filmic rather than a loading spinner:
+ *   - a camera that pushes in on the arena for the match and pulls back for
+ *     settlement, so the frame has intent instead of just contents
+ *   - letterbox bars that shut at the end, revealing the page behind them
+ *   - a telemetry column in screen space that fills as each beat runs
+ *   - eased beat transitions, so nothing arrives at a constant rate
+ *
+ * Trigger: NOT page load. This component sits on every page (via Base.astro)
+ * hidden by CSS, and only plays when the visitor clicks a "Launch Agent"
+ * control — any element marked [data-launch-agent] with an href, anywhere
+ * on the site (nav, hero, mobile sheet, ...). It is the send-off before
+ * app.midearth.ai, not a splash screen. ?intro=1 forces a load-time preview
+ * for design review; that path never redirects on dismiss.
+ *
+ * Safety rules, because a splash screen that gets stuck is worse than none:
+ *   - display:none by default. Only html[data-intro] reveals it.
+ *   - Skipped entirely under prefers-reduced-motion — the click goes
+ *     straight to the destination URL instead.
+ *   - Dismissable by click, Esc, space, or the skip button — each of those
+ *     skips straight to the destination too, since the visitor already
+ *     chose to leave.
+ *   - A hard failsafe finishes it regardless of what else went wrong.
+ */
+---
+
+<div class="intro" data-intro-root aria-hidden="true">
+  <canvas data-intro-canvas></canvas>
+
+  <div class="intro-vig" aria-hidden="true"></div>
+  <div class="intro-grain" aria-hidden="true"></div>
+  <i class="bar bar-t" data-bar-t aria-hidden="true"></i>
+  <i class="bar bar-b" data-bar-b aria-hidden="true"></i>
+
+  <div class="intro-ui">
+    <span class="intro-logo" aria-hidden="true"></span>
+
+    <div class="intro-foot">
+      <div class="intro-stage">
+        <span class="intro-count mono"><b data-intro-num>01</b> / 04</span>
+        <span class="intro-label display" data-intro-label>CONNECT YOUR AGENTS ACROSS THE WORLD</span>
+        <span class="intro-kicker mono" data-intro-kick>twelve regions, one arena</span>
+      </div>
+      <div class="intro-bar" aria-hidden="true"><i data-intro-bar></i></div>
+    </div>
+
+    <button class="intro-skip mono" data-intro-skip type="button">skip</button>
+  </div>
+</div>
+
+<style is:global>
+  /* Hidden unless the head script opts in — the failsafe for a JS-less load. */
+  .intro {
+    display: none;
+  }
+  html[data-intro] .intro {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+
+    /* A cold open is a cinema moment, so it is dark in every theme — and on a
+       light page that makes the hand-off a reveal rather than a flat cut.
+       Each theme keeps its own accent pair. */
+    --color-void: #04070a;
+    --color-paper: #e8eef0;
+    --color-paper-faint: #5a6b75;
+    --color-rule: #16202a;
+    --color-rule-hot: #22303c;
+    background: var(--color-void);
+    opacity: 1;
+    transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  html[data-intro] body {
+    overflow: hidden;
+  }
+  .intro.out {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* The light theme's accents are dark by design and would vanish on this
+     ground, so it borrows the dark theme's brighter pair. */
+  html[data-theme="light"] .intro {
+    --color-agent: #22c8e8;
+    --color-agent-hot: #7de9f7;
+    --color-signal: #35e084;
+    --grad-brand-soft: linear-gradient(100deg, #22c8e8 10%, #35e084 90%);
+  }
+
+  .intro canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .intro-vig {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(
+      ellipse 108% 96% at 50% 46%,
+      transparent 52%,
+      rgba(0, 0, 0, 0.88) 100%
+    );
+    opacity: 0.85;
+  }
+  .intro-grain {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.05;
+    mix-blend-mode: overlay;
+    background-image: var(--noise);
+  }
+
+  /* letterbox — shuts at the end as a shutter, revealing the page behind */
+  .bar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 0;
+    background: #000;
+    pointer-events: none;
+    z-index: 3;
+  }
+  .bar-t {
+    top: 0;
+  }
+  .bar-b {
+    bottom: 0;
+  }
+
+  .intro-ui {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 4;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    padding: clamp(1.6rem, 4vw, 3rem);
+  }
+
+  .intro-logo {
+    display: block;
+    width: 176px;
+    max-width: 46vw;
+    height: 28px;
+    background: url("/logo-lockup.png") no-repeat left center;
+    background-size: contain;
+    opacity: 0;
+    animation: intro-fade 1s cubic-bezier(0.16, 1, 0.3, 1) 0.35s forwards;
+  }
+  @keyframes intro-fade {
+    to {
+      opacity: 1;
+    }
+  }
+
+  .intro-foot {
+    grid-row: 3;
+    align-self: end;
+  }
+  .intro-stage {
+    display: grid;
+    gap: 0.5rem;
+  }
+  .intro-count {
+    font-size: 0.66rem;
+    letter-spacing: 0.24em;
+    color: var(--color-paper-faint);
+  }
+  .intro-count b {
+    color: var(--color-signal);
+    font-weight: 400;
+  }
+  .intro-label {
+    display: block;
+    font-size: clamp(2rem, 7vw, 5.4rem);
+    line-height: 1;
+    letter-spacing: -0.035em;
+    color: var(--color-paper);
+  }
+  .intro-kicker {
+    font-size: 0.68rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--color-paper-faint);
+  }
+
+  .intro-bar {
+    margin-top: 1.4rem;
+    height: 2px;
+    background: var(--color-rule);
+    overflow: hidden;
+  }
+  .intro-bar i {
+    display: block;
+    height: 100%;
+    width: 0%;
+    background: var(--grad-brand-soft);
+  }
+
+  .intro-skip {
+    position: absolute;
+    right: clamp(1.6rem, 4vw, 3rem);
+    top: clamp(1.6rem, 4vw, 3rem);
+    pointer-events: auto;
+    background: none;
+    border: 1px solid var(--color-rule-hot);
+    color: var(--color-paper-faint);
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 0.45rem 0.85rem;
+    cursor: pointer;
+    transition:
+      color 0.25s ease,
+      border-color 0.25s ease;
+  }
+  .intro-skip:hover {
+    color: var(--color-paper);
+    border-color: var(--color-agent);
+  }
+</style>
+
+<script is:inline define:vars={{ LAND, REGIONS, HUB }}>
+  (function () {
+    var root = document.querySelector("[data-intro-root]");
+    if (!root) return;
+
+    var reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var started = false;
+    var launching = false;
+    var pendingHref = null;
+
+    // Any [data-launch-agent] control, anywhere on the page, sends the
+    // visitor off through this cold open instead of navigating directly.
+    // Reduced motion (and no-JS, which never reaches this listener at all)
+    // goes straight to the href — the real link is still there underneath.
+    document.addEventListener("click", function (e) {
+      var trigger = e.target.closest("[data-launch-agent]");
+      if (!trigger) return;
+      var href = trigger.getAttribute("href");
+      if (!href) return;
+      e.preventDefault();
+      if (reducedMotion) {
+        window.location.href = href;
+        return;
+      }
+      if (launching) return;
+      launching = true;
+      pendingHref = href;
+      document.documentElement.setAttribute("data-intro", "1");
+      startIntro();
+    });
+
+    // ?intro=1 forces a preview on load, for design review. pendingHref stays
+    // null on this path, so dismissing it just reveals the page underneath
+    // instead of redirecting anywhere.
+    if (document.documentElement.hasAttribute("data-intro")) startIntro();
+
+    function startIntro() {
+      if (started) return;
+      started = true;
+
+    var canvas = root.querySelector("[data-intro-canvas]");
+    var ctx = canvas.getContext("2d");
+    var elNum = root.querySelector("[data-intro-num]");
+    var elLabel = root.querySelector("[data-intro-label]");
+    var elKick = root.querySelector("[data-intro-kick]");
+    var elBar = root.querySelector("[data-intro-bar]");
+    var barT = root.querySelector("[data-bar-t]");
+    var barB = root.querySelector("[data-bar-b]");
+    var btn = root.querySelector("[data-intro-skip]");
+    var ui = root.querySelector(".intro-ui");
+
+    var css = getComputedStyle(root);
+    function tok(n, fb) {
+      var v = css.getPropertyValue(n).trim();
+      return v || fb;
+    }
+    var AGENT = tok("--color-agent", "#22c8e8");
+    var AGENT_HOT = tok("--color-agent-hot", "#7de9f7");
+    var SIGNAL = tok("--color-signal", "#35e084");
+    var PAPER = tok("--color-paper", "#e8eef0");
+
+    function rgba(hex, a) {
+      var n = parseInt(hex.slice(1), 16);
+      return "rgba(" + ((n >> 16) & 255) + "," + ((n >> 8) & 255) + "," + (n & 255) + "," + a + ")";
+    }
+    function hex4() {
+      return Math.floor(Math.random() * 65536).toString(16).padStart(4, "0");
+    }
+    function ease(k) {
+      return k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+    }
+    function cl(v) {
+      return v < 0 ? 0 : v > 1 ? 1 : v;
+    }
+
+    /* --------------------------------------------------------- lifecycle */
+    var done = false;
+    function finish() {
+      if (done) return;
+      done = true;
+      root.classList.add("out");
+      setTimeout(function () {
+        if (pendingHref) {
+          window.location.href = pendingHref;
+          return;
+        }
+        document.documentElement.removeAttribute("data-intro");
+        if (root.parentNode) root.parentNode.removeChild(root);
+      }, 550);
+    }
+    setTimeout(finish, 12000); // hard failsafe
+    if (btn) btn.addEventListener("click", finish);
+    root.addEventListener("click", finish);
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" || e.key === " ") finish();
+    });
+
+    /* ------------------------------------------------------------ layout */
+    var LAT_TOP = 74, LAT_BOT = -54;
+    var W = 0, H = 0, mx = 0, my = 0, mw = 0, mh = 0;
+    var hub = null, sites = [], dots = [], stars = [];
+
+    function project(lat, lon) {
+      return {
+        x: mx + ((lon + 180) / 360) * mw,
+        y: my + ((LAT_TOP - lat) / (LAT_TOP - LAT_BOT)) * mh,
+      };
+    }
+
+    function layout() {
+      var d = Math.min(window.devicePixelRatio || 1, 2);
+      W = window.innerWidth;
+      H = window.innerHeight;
+      canvas.width = Math.round(W * d);
+      canvas.height = Math.round(H * d);
+      ctx.setTransform(d, 0, 0, d, 0, 0);
+
+      var aspect = 360 / (LAT_TOP - LAT_BOT);
+      mw = W * 0.9;
+      mh = mw / aspect;
+      if (mh > H * 0.56) { mh = H * 0.56; mw = mh * aspect; }
+      mx = (W - mw) / 2;
+      my = (H - mh) / 2 - H * 0.04;
+
+      dots = [];
+      for (var i = 0; i < LAND.length; i++) {
+        var row = LAND[i];
+        var lat = 90 - row.r * 5 - 2.5;
+        if (lat > LAT_TOP || lat < LAT_BOT) continue;
+        for (var s = 0; s < row.s.length; s++) {
+          for (var c = row.s[s][0]; c <= row.s[s][1]; c++) {
+            var p = project(lat, -180 + c * 5 + 2.5);
+            dots.push({ x: p.x, y: p.y, d: (p.x - mx) / mw });
+          }
+        }
+      }
+
+      stars = [];
+      for (var k = 0; k < 70; k++) {
+        stars.push({
+          x: Math.random() * W, y: Math.random() * H,
+          r: Math.random() * 1.1 + 0.3, a: Math.random() * 0.5 + 0.15,
+        });
+      }
+
+      hub = project(HUB.lat, HUB.lon);
+      sites = REGIONS.map(function (rg, i) {
+        var p = project(rg.lat, rg.lon);
+        var midx = (p.x + hub.x) / 2, midy = (p.y + hub.y) / 2;
+        var dx = hub.x - p.x, dy = hub.y - p.y;
+        var len = Math.hypot(dx, dy) || 1;
+        var bow = Math.min(len * 0.26, mh * 0.3);
+        return {
+          reg: rg, x: p.x, y: p.y,
+          cx: midx + (-dy / len) * bow,
+          cy: midy + (dx / len) * bow,
+          at: 0.1 + (i / REGIONS.length) * 0.78,
+          fly: 0.02 + (i / REGIONS.length) * 0.5,
+          id: "agent_" + hex4(),
+        };
+      });
+    }
+    layout();
+    window.addEventListener("resize", layout, { passive: true });
+
+    function bez(s, t) {
+      var u = 1 - t;
+      return {
+        x: u * u * s.x + 2 * u * t * s.cx + t * t * hub.x,
+        y: u * u * s.y + 2 * u * t * s.cy + t * t * hub.y,
+      };
+    }
+
+    /* ---------------------------------------------------------- timeline */
+    var B1 = [0.55, 2.35], B2 = [2.35, 4.15], B3 = [4.15, 6.35], B4 = [6.35, 7.8];
+    var CLOSE = 7.8, TOTAL = 8.25;
+    var BEATS = [
+      { n: "01", t: "Connect your agents across the world", k: "twelve regions, one arena" },
+      { n: "02", t: "AI agents", k: "each one holds its own keys" },
+      { n: "03", t: "The match", k: "every agent on the same tick" },
+      { n: "04", t: "Settlement", k: "rank payout, then on-chain" },
+    ];
+    var beat = -1;
+    function setBeat(i) {
+      if (i === beat) return;
+      beat = i;
+      var b = BEATS[i];
+      if (elNum) elNum.textContent = b.n;
+      if (elLabel) {
+        elLabel.textContent = b.t;
+        elLabel.animate(
+          [
+            { opacity: 0, transform: "translateY(0.42em)", filter: "blur(7px)" },
+            { opacity: 1, transform: "none", filter: "blur(0)" },
+          ],
+          { duration: 720, easing: "cubic-bezier(.16,1,.3,1)" }
+        );
+      }
+      if (elKick) {
+        elKick.textContent = b.k;
+        elKick.animate([{ opacity: 0 }, { opacity: 1 }], {
+          duration: 820, delay: 130, easing: "ease-out", fill: "backwards",
+        });
+      }
+    }
+
+    // telemetry column, screen space, fills as the beats run
+    var feed = [], pushed = {}, now = 0;
+    function pushOnce(key, text, col) {
+      if (pushed[key]) return;
+      pushed[key] = 1;
+      feed.push({ t: text, c: col, born: now });
+      if (feed.length > 9) feed.shift();
+    }
+
+    var pucks = [];
+    for (var q = 0; q < 6; q++) {
+      pucks.push({ off: q * 0.11, y: (q - 2.5) * 0.05, v: [1, 2, 3][q % 3] });
+    }
+
+    /* ------------------------------------------------------------- draw */
+    // Dev affordance: ?introAt=6.5 starts the timeline at that offset, so any
+    // beat can be inspected without waiting for it (and without a throttled
+    // headless clock making the later beats unreachable).
+    var seek = 0;
+    try {
+      seek = parseFloat(new URLSearchParams(location.search).get("introAt")) || 0;
+    } catch (e) {}
+
+    var t0 = 0;
+    function frame(ts) {
+      if (done) return;
+      if (!t0) t0 = ts - seek * 1000;
+      var t = (ts - t0) / 1000;
+      now = t;
+      if (t >= TOTAL) { finish(); return; }
+      requestAnimationFrame(frame);
+
+      if (elBar) elBar.style.width = cl(t / CLOSE) * 100 + "%";
+      setBeat(t < B1[1] ? 0 : t < B2[1] ? 1 : t < B3[1] ? 2 : 3);
+
+      var closing = cl((t - CLOSE) / (TOTAL - CLOSE));
+      var barPct = t < CLOSE ? 7 * cl(t / 0.55) : 7 + 43 * ease(closing);
+      if (barT) barT.style.height = barPct + "%";
+      if (barB) barB.style.height = barPct + "%";
+      // the type has to leave with the picture, or it sits stranded on a
+      // black shutter for the last half second
+      if (ui) ui.style.opacity = String(1 - cl(closing * 1.6));
+
+      ctx.clearRect(0, 0, W, H);
+
+      for (var sx = 0; sx < stars.length; sx++) {
+        var s2 = stars[sx];
+        ctx.fillStyle = rgba(PAPER, s2.a * 0.5 * cl(t / 0.8));
+        ctx.beginPath();
+        ctx.arc(s2.x, s2.y, s2.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // camera: hold, drift, push in for the match, pull back to settle
+      var scale;
+      if (t < B2[0]) scale = 1 + 0.02 * ease(cl((t - B1[0]) / (B1[1] - B1[0])));
+      else if (t < B3[0]) scale = 1.02 + 0.05 * ease(cl((t - B2[0]) / (B2[1] - B2[0])));
+      else if (t < B4[0]) scale = 1.07 + 0.62 * ease(cl((t - B3[0]) / (B3[1] - B3[0])));
+      else scale = 1.69 - 0.5 * ease(cl((t - B4[0]) / (B4[1] - B4[0])));
+
+      ctx.save();
+      ctx.translate(hub.x, hub.y);
+      ctx.scale(scale, scale);
+      ctx.translate(-hub.x, -hub.y);
+
+      // beat 1 — the world resolves, west to east
+      var k1 = cl((t - B1[0]) / (B1[1] - B1[0]));
+      for (var i = 0; i < dots.length; i++) {
+        var dt = dots[i];
+        var local = (k1 - dt.d * 0.8) / 0.18;
+        if (local <= 0) continue;
+        var a = cl(local);
+        ctx.fillStyle = rgba(AGENT, 0.55 * a);
+        ctx.beginPath();
+        ctx.arc(dt.x, dt.y, 1.6 * a + 0.4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      for (var s = 0; s < sites.length; s++) {
+        var stt = sites[s];
+        var app = (k1 - stt.at) / 0.16;
+        if (app <= 0) continue;
+        var ap = cl(app);
+        if (ap < 1) {
+          ctx.strokeStyle = rgba(AGENT_HOT, (1 - ap) * 0.9);
+          ctx.lineWidth = 1.4;
+          ctx.beginPath();
+          ctx.arc(stt.x, stt.y, 6 + ap * 30, 0, Math.PI * 2);
+          ctx.stroke();
+        } else {
+          pushOnce("r" + s, stt.reg.id + "  online", AGENT);
+        }
+        ctx.save();
+        ctx.globalAlpha = ap;
+        ctx.shadowColor = AGENT;
+        ctx.shadowBlur = 12;
+        ctx.strokeStyle = AGENT;
+        ctx.lineWidth = 1.3;
+        ctx.strokeRect(stt.x - 5.5, stt.y - 6.5, 11, 13);
+        ctx.fillStyle = rgba(AGENT_HOT, 0.95);
+        for (var u = 0; u < 3; u++) ctx.fillRect(stt.x - 3.2, stt.y - 4 + u * 3.4, 6.4, 1.3);
+        ctx.restore();
+      }
+
+      // beat 2 — agents launch and converge
+      if (t > B2[0]) {
+        var k2 = cl((t - B2[0]) / (B2[1] - B2[0]));
+        for (var f = 0; f < sites.length; f++) {
+          var sf = sites[f];
+          var prog = (k2 - sf.fly) / 0.5;
+          if (prog <= 0) continue;
+          var pr = cl(prog);
+          ctx.strokeStyle = rgba(AGENT, 0.16);
+          ctx.lineWidth = 0.9;
+          ctx.beginPath();
+          ctx.moveTo(sf.x, sf.y);
+          ctx.quadraticCurveTo(sf.cx, sf.cy, hub.x, hub.y);
+          ctx.stroke();
+
+          ctx.strokeStyle = rgba(AGENT_HOT, 0.8);
+          ctx.lineWidth = 1.8;
+          ctx.beginPath();
+          var from = Math.max(0, pr - 0.26);
+          var a0 = bez(sf, from);
+          ctx.moveTo(a0.x, a0.y);
+          for (var kk = from; kk <= pr; kk += 0.02) {
+            var qq = bez(sf, kk);
+            ctx.lineTo(qq.x, qq.y);
+          }
+          ctx.stroke();
+          var hd = bez(sf, pr);
+          ctx.save();
+          ctx.shadowColor = AGENT_HOT;
+          ctx.shadowBlur = 16;
+          ctx.fillStyle = AGENT_HOT;
+          ctx.beginPath();
+          ctx.arc(hd.x, hd.y, 3.6, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+          if (pr >= 1) pushOnce("a" + f, sf.id + "  seated", AGENT_HOT);
+        }
+      }
+
+      // beat 3 — the match
+      var inMatch = t > B3[0] && t < B4[0];
+      if (inMatch) {
+        var k3 = cl((t - B3[0]) / (B3[1] - B3[0]));
+        var span = Math.min(mw * 0.26, 240);
+        var gx = hub.x + span * 0.46;
+
+        ctx.save();
+        ctx.shadowColor = SIGNAL;
+        ctx.shadowBlur = 18;
+        ctx.strokeStyle = rgba(SIGNAL, 0.9);
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(gx, hub.y - span * 0.26);
+        ctx.lineTo(gx, hub.y + span * 0.26);
+        ctx.stroke();
+        ctx.restore();
+        ctx.fillStyle = rgba(SIGNAL, 0.08);
+        ctx.fillRect(gx, hub.y - span * 0.26, span * 0.2, span * 0.52);
+
+        for (var pz = 0; pz < pucks.length; pz++) {
+          var pk = pucks[pz];
+          var pp = (k3 - pk.off) / 0.6;
+          if (pp <= 0) continue;
+          var ppc = cl(pp);
+          var px = hub.x - span * 0.44 + ease(ppc) * (span * 0.95);
+          var py = hub.y + pk.y * span;
+          var sz = 7 + pk.v * 2.4;
+          ctx.fillStyle = rgba(PAPER, 0.13);
+          ctx.fillRect(px - sz / 2, py - sz / 2, sz, sz);
+          ctx.strokeStyle = rgba(ppc >= 1 ? SIGNAL : PAPER, 0.85);
+          ctx.lineWidth = 1;
+          ctx.strokeRect(px - sz / 2, py - sz / 2, sz, sz);
+          if (ppc >= 1) {
+            ctx.fillStyle = rgba(SIGNAL, 0.95);
+            ctx.font = "600 12px ui-monospace, monospace";
+            ctx.textAlign = "center";
+            ctx.fillText("+" + pk.v, px, py - sz);
+            pushOnce("p" + pz, "score  +" + pk.v, SIGNAL);
+          }
+        }
+        var ring = (k3 * 2.4) % 1;
+        ctx.strokeStyle = rgba(SIGNAL, (1 - ring) * 0.6);
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.arc(hub.x, hub.y, 18 + ring * 80, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      // beat 4 — settlement
+      if (t > B4[0]) {
+        var k4 = cl((t - B4[0]) / (B4[1] - B4[0]));
+        var n = 6, bw = 24, gap = 16;
+        var totalW = n * bw + (n - 1) * gap;
+        var sxx = hub.x - totalW / 2;
+        for (var b = 0; b < n; b++) {
+          var bp = (k4 - b * 0.1) / 0.18;
+          if (bp <= 0) continue;
+          var bpc = cl(bp);
+          var bx = sxx + b * (bw + gap);
+          ctx.save();
+          ctx.globalAlpha = bpc;
+          ctx.shadowColor = SIGNAL;
+          ctx.shadowBlur = 18 * bpc;
+          ctx.strokeStyle = SIGNAL;
+          ctx.lineWidth = 1.6;
+          ctx.strokeRect(bx, hub.y - bw / 2, bw, bw);
+          ctx.fillStyle = rgba(SIGNAL, 0.22 * bpc);
+          ctx.fillRect(bx, hub.y - bw / 2, bw, bw);
+          ctx.restore();
+          if (b > 0) {
+            ctx.strokeStyle = rgba(SIGNAL, 0.55 * bpc);
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.moveTo(bx - gap, hub.y);
+            ctx.lineTo(bx, hub.y);
+            ctx.stroke();
+          }
+          if (bpc >= 1) pushOnce("b" + b, "settled  " + hex4() + "…" + hex4(), SIGNAL);
+        }
+      }
+
+      // the arena, present from beat 2
+      if (t > B1[1]) {
+        var col = inMatch ? SIGNAL : AGENT;
+        if (inMatch) {
+          var g = ctx.createRadialGradient(hub.x, hub.y, 0, hub.x, hub.y, 150);
+          g.addColorStop(0, rgba(SIGNAL, 0.14));
+          g.addColorStop(1, rgba(SIGNAL, 0));
+          ctx.fillStyle = g;
+          ctx.fillRect(hub.x - 150, hub.y - 150, 300, 300);
+        }
+        ctx.save();
+        ctx.shadowColor = col;
+        ctx.shadowBlur = inMatch ? 30 : 16;
+        ctx.strokeStyle = col;
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        ctx.arc(hub.x, hub.y, 14, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = rgba(col, 0.9);
+        ctx.beginPath();
+        ctx.arc(hub.x, hub.y, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      ctx.restore(); // end camera
+
+      // telemetry column, screen space so the camera does not drag it
+      var fx = W - Math.max(150, Math.min(W * 0.2, 250));
+      ctx.font = "10px ui-monospace, monospace";
+      ctx.textAlign = "left";
+      for (var r = 0; r < feed.length; r++) {
+        var row = feed[r];
+        var alpha = cl((t - row.born) / 0.3) * (0.4 + 0.6 * (r / Math.max(feed.length - 1, 1)));
+        ctx.fillStyle = rgba(row.c, alpha * 0.85);
+        ctx.fillText(row.t, fx, H * 0.3 + r * 17);
+      }
+
+      // a flash as the chain starts
+      if (t > B4[0] && t < B4[0] + 0.28) {
+        ctx.fillStyle = rgba(PAPER, (1 - (t - B4[0]) / 0.28) * 0.12);
+        ctx.fillRect(0, 0, W, H);
+      }
+    }
+    requestAnimationFrame(frame);
+    } // end startIntro
+  })();
+</script>

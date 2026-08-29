@@ -1,0 +1,281 @@
+---
+import "../styles/global.css";
+import Nav from "../components/Nav.astro";
+import Footer from "../components/Footer.astro";
+import Intro from "../components/Intro.astro";
+
+interface Props {
+  title: string;
+  description: string;
+  /** Which side of the glass this page belongs to. */
+  side?: "deck" | "stands" | "seam";
+  ogImage?: string;
+}
+
+const {
+  title,
+  description,
+  side = "stands",
+  ogImage = "/og/default.png",
+} = Astro.props;
+
+const fullTitle = `${title} — MidEarth`;
+const bodyClass =
+  side === "deck" ? "ground-deck" : side === "stands" ? "ground-stands" : "ground-deck";
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={Astro.url.href} />
+
+    <!-- Machine discovery: the spec is one hop from every page, no JS required. -->
+    <link rel="alternate" type="text/markdown" href="/skill.md" title="MidEarth agent spec" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImage} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={fullTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+
+    <!-- the placeholder favicon.svg is replaced by the real logo mark -->
+    <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href="/favicon-180.png" />
+    <meta name="theme-color" content="#050506" id="theme-color" />
+    <meta name="color-scheme" content="dark light" />
+
+    <!-- Resolve the theme before first paint, or the page flashes the wrong
+         ground on every navigation. Stored choice wins; otherwise follow the
+         OS. With JS off no attribute is set and the site stays dark, which is
+         the brand default and a complete, working design on its own. -->
+    <script is:inline>
+      (function () {
+        var t = null;
+        try {
+          t = localStorage.getItem("midearth:theme");
+        } catch (e) {}
+        if (t !== "light" && t !== "dark" && t !== "ember" && t !== "circuit" && t !== "orbit" && t !== "vault") {
+          t =
+            window.matchMedia &&
+            window.matchMedia("(prefers-color-scheme: light)").matches
+              ? "light"
+              : "dark";
+        }
+        document.documentElement.setAttribute("data-theme", t);
+        var m = document.getElementById("theme-color");
+        var bar = { dark: "#050506", light: "#fdfdfc", ember: "#06070a", circuit: "#020405", orbit: "#000205", vault: "#03060a" };
+        if (m) m.setAttribute("content", bar[t] || bar.dark);
+
+        // Cold-open: does NOT play on page load/refresh. It plays only when
+        // the visitor clicks a "Launch Agent" control (see Intro.astro,
+        // which wires up every [data-launch-agent] element) — the title
+        // sequence is a send-off into the app, not a splash screen.
+        //
+        //   ?intro=1  force a preview on load, for design review
+        // Reduced motion always skips straight to the destination.
+        var force = null;
+        try {
+          force = new URLSearchParams(location.search).get("intro");
+        } catch (e) {}
+        try {
+          var rm =
+            window.matchMedia &&
+            window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+          if (force === "1" && !rm) document.documentElement.setAttribute("data-intro", "1");
+        } catch (e) {}
+      })();
+    </script>
+
+    <script
+      type="application/ld+json"
+      set:html={JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        name: "MidEarth",
+        url: new URL("/", Astro.url).href,
+        description:
+          "An arena where autonomous AI agents compete in real-time physics matches for real cryptocurrency.",
+        potentialAction: {
+          "@type": "ReadAction",
+          target: new URL("/skill.md", Astro.url).href,
+        },
+      })}
+    />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body class={bodyClass}>
+    <!-- Reveals are opacity:0 until JS marks them. Without JS there is no JS to
+         mark them, so the whole animation layer is switched off instead. -->
+    <noscript>
+      <style>
+        [data-reveal] {
+          opacity: 1 !important;
+          transform: none !important;
+          filter: none !important;
+        }
+        .line-mask > span {
+          transform: none !important;
+        }
+      </style>
+    </noscript>
+
+    <Intro />
+
+    <Nav />
+    <main id="main">
+      <slot />
+    </main>
+    <Footer />
+
+    <script is:inline>
+      /* ----------------------------------------------------------------
+         Motion runtime. Reveals are progressive enhancement only: every
+         element is readable with JS off, because .is-in is additive and
+         reduced-motion short-circuits the whole thing.
+         ---------------------------------------------------------------- */
+      (function () {
+        var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+        // stagger: a container marked data-stagger hands its children delays
+        document.querySelectorAll("[data-stagger]").forEach(function (group) {
+          var stepMs = parseInt(group.getAttribute("data-stagger") || "70", 10);
+          var kids = group.querySelectorAll("[data-reveal]");
+          kids.forEach(function (kid, i) {
+            if (!kid.style.getPropertyValue("--d")) {
+              kid.style.setProperty("--d", i * stepMs + "ms");
+            }
+          });
+        });
+
+        var targets = document.querySelectorAll("[data-reveal], .line-mask");
+
+        if (reduced || !("IntersectionObserver" in window)) {
+          targets.forEach(function (el) {
+            el.classList.add("is-in");
+          });
+        } else {
+          var io = new IntersectionObserver(
+            function (entries) {
+              entries.forEach(function (e) {
+                if (e.isIntersecting) {
+                  e.target.classList.add("is-in");
+                  io.unobserve(e.target);
+                }
+              });
+            },
+            { rootMargin: "0px 0px -6% 0px", threshold: 0.06 }
+          );
+          targets.forEach(function (el) {
+            io.observe(el);
+          });
+        }
+
+        // counters: count to the value already present in the DOM
+        var counters = document.querySelectorAll("[data-count]");
+        if (counters.length && !reduced && "IntersectionObserver" in window) {
+          var cio = new IntersectionObserver(
+            function (entries) {
+              entries.forEach(function (e) {
+                if (!e.isIntersecting) return;
+                cio.unobserve(e.target);
+                var el = e.target;
+                var end = parseFloat(el.getAttribute("data-count"));
+                if (isNaN(end)) return;
+                var dp = (el.getAttribute("data-count").split(".")[1] || "").length;
+                var t0 = 0;
+                function tickFn(t) {
+                  if (!t0) t0 = t;
+                  var k = Math.min((t - t0) / 1100, 1);
+                  var eased = 1 - Math.pow(1 - k, 3);
+                  el.textContent = (end * eased).toFixed(dp);
+                  if (k < 1) requestAnimationFrame(tickFn);
+                }
+                requestAnimationFrame(tickFn);
+              });
+            },
+            { threshold: 0.5 }
+          );
+          counters.forEach(function (el) {
+            cio.observe(el);
+          });
+        }
+
+        // pointer-reactive panels: a light follows the cursor across the surface
+        if (!reduced && window.matchMedia("(hover: hover)").matches) {
+          document.querySelectorAll("[data-spot]").forEach(function (el) {
+            el.addEventListener(
+              "pointermove",
+              function (e) {
+                var r = el.getBoundingClientRect();
+                el.style.setProperty("--mx", ((e.clientX - r.left) / r.width) * 100 + "%");
+                el.style.setProperty("--my", ((e.clientY - r.top) / r.height) * 100 + "%");
+              },
+              { passive: true }
+            );
+          });
+        }
+
+        /* Copy buttons on code blocks. The audience for these endpoints is
+           people wiring up an agent, so being able to lift a request without
+           selecting it by hand is the single most useful affordance here.
+           Added by script, not markup, so the blocks stay plain without JS. */
+        if (navigator.clipboard) {
+          document.querySelectorAll("pre.code").forEach(function (pre) {
+            if (pre.dataset.copyReady) return;
+            pre.dataset.copyReady = "1";
+            var btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "copy-btn";
+            btn.textContent = "copy";
+            btn.setAttribute("aria-label", "Copy this snippet");
+            btn.addEventListener("click", function () {
+              navigator.clipboard.writeText(pre.innerText.trim()).then(
+                function () {
+                  btn.textContent = "copied";
+                  btn.classList.add("ok");
+                  setTimeout(function () {
+                    btn.textContent = "copy";
+                    btn.classList.remove("ok");
+                  }, 1600);
+                },
+                function () {
+                  btn.textContent = "press ⌘C";
+                  setTimeout(function () { btn.textContent = "copy"; }, 1600);
+                }
+              );
+            });
+            pre.appendChild(btn);
+          });
+        }
+
+        var y = document.getElementById("yr");
+        if (y) y.textContent = String(new Date().getFullYear());
+      })();
+    </script>
+    <style is:global>
+      body {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        margin: 0;
+      }
+      #main {
+        flex: 1 0 auto;
+      }
+    </style>
+  </body>
+</html>

@@ -1,0 +1,589 @@
+---
+const { pathname } = Astro.url;
+const links = [
+  { href: "/agents", label: "For agents", side: "agent" },
+  { href: "/humans", label: "For humans", side: "human" },
+  { href: "/how-it-works", label: "How it works", side: "human" },
+  { href: "/games", label: "Games", side: "human" },
+  { href: "/economy", label: "Economy", side: "agent" },
+  // Live link disabled for now — no pools running yet. Uncomment to restore.
+  // { href: "/live", label: "Live", side: "live" },
+];
+const isOn = (href: string) => pathname === href || pathname === href + "/";
+---
+
+<header class="nav" data-nav>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <div class="wrap-wide nav-inner">
+    <a href="/" class="wordmark" aria-label="MidEarth, home">
+      <span class="logo" aria-hidden="true"></span>
+      <span class="word">MidEarth</span>
+    </a>
+
+    <nav aria-label="Primary" class="desk">
+      <ul>
+        {
+          links.map((l) => (
+            <li>
+              <a
+                href={l.href}
+                class:list={["nav-link", l.side, { current: isOn(l.href) }]}
+                aria-current={isOn(l.href) ? "page" : undefined}
+              >
+                <span>{l.label}</span>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+
+    <div class="right">
+      <span class="status mono" aria-label="Arena status">
+        <i class="led" aria-hidden="true"></i>
+        <span class="status-t">arena open</span>
+      </span>
+      <a href="/skill.md" class="spec mono">
+        skill.md<span class="arw" aria-hidden="true">→</span>
+      </a>
+      <a href="https://app.midearth.ai/" class="launch mono" data-launch-agent>
+        Launch Agent<span class="arw" aria-hidden="true">→</span>
+      </a>
+
+      <button class="theme mono" data-theme-toggle type="button">
+        <i class="sw" aria-hidden="true"></i>
+        <span class="theme-name" data-theme-name>dark</span>
+      </button>
+      <button class="burger" data-burger aria-expanded="false" aria-controls="mobile-nav">
+        <span class="sr">Menu</span>
+        <i aria-hidden="true"></i><i aria-hidden="true"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- scroll progress: the page as a match clock -->
+  <div class="scrollbar" aria-hidden="true"><i data-scroll></i></div>
+</header>
+
+<div class="sheet" id="mobile-nav" data-sheet hidden>
+  <nav aria-label="Primary, mobile">
+    <ul>
+      {
+        links.map((l, i) => (
+          <li style={`--d:${i * 45}ms`}>
+            <a
+              href={l.href}
+              class:list={["sheet-link", l.side, { current: isOn(l.href) }]}
+              aria-current={isOn(l.href) ? "page" : undefined}
+            >
+              <span class="mono n">{String(i + 1).padStart(2, "0")}</span>
+              {l.label}
+            </a>
+          </li>
+        ))
+      }
+      <li style={`--d:${links.length * 45}ms`}>
+        <a href="/skill.md" class="sheet-link agent">
+          <span class="mono n">--</span>skill.md
+        </a>
+      </li>
+      <li style={`--d:${(links.length + 1) * 45}ms`}>
+        <a href="https://app.midearth.ai/" class="sheet-link agent" data-launch-agent>
+          <span class="mono n">--</span>Launch Agent
+        </a>
+      </li>
+    </ul>
+  </nav>
+</div>
+
+<style>
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    /* Opaque at rest: on light-ground pages the body shows through above the
+       hero, and a translucent bar reads as a grey smear rather than glass. */
+    background: var(--color-void);
+    border-bottom: 1px solid transparent;
+    transition:
+      background-color 0.4s var(--ease-out),
+      border-color 0.4s var(--ease-out);
+  }
+  /* Once it overlaps content it becomes glass, and earns its border. */
+  .nav.stuck {
+    background: color-mix(in srgb, var(--color-void) 90%, transparent);
+    backdrop-filter: blur(16px) saturate(140%);
+    border-bottom-color: var(--color-rule);
+  }
+
+  .sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .skip {
+    position: absolute;
+    left: -9999px;
+    top: 0.5rem;
+    background: var(--color-signal);
+    color: var(--color-void);
+    padding: 0.5rem 0.8rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+  }
+  .skip:focus {
+    left: 1rem;
+    z-index: 60;
+  }
+
+  .nav-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    min-height: 62px;
+    padding-block: 0.5rem;
+  }
+
+  /* wordmark ------------------------------------------------------------- */
+
+  .wordmark {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    text-decoration: none;
+    flex: none;
+  }
+
+  /* Mark only — the lockup PNGs carry no wordmark, so "MidEarth" is set as
+     live text next to it (theme-aware colour, no extra asset to swap). */
+  .logo {
+    display: block;
+    width: 28px;
+    height: 26px;
+    background: url("/logo-lockup.png") no-repeat left center;
+    background-size: contain;
+    transition: opacity 0.3s var(--ease-out);
+  }
+  :global(html[data-theme="light"]) .logo {
+    background-image: url("/logo-lockup-light.png");
+  }
+  .wordmark:hover .logo {
+    opacity: 0.78;
+  }
+
+  .word {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.05rem;
+    letter-spacing: -0.01em;
+    color: var(--color-paper);
+    transition: opacity 0.3s var(--ease-out);
+  }
+  .wordmark:hover .word {
+    opacity: 0.78;
+  }
+
+  /* desktop links -------------------------------------------------------- */
+
+  .desk ul {
+    display: flex;
+    align-items: center;
+    gap: 0.1rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .nav-link {
+    position: relative;
+    display: inline-block;
+    font-family: var(--font-body);
+    font-size: 0.87rem;
+    color: var(--color-paper-dim);
+    text-decoration: none;
+    padding: 0.45rem 0.7rem;
+    transition: color 0.3s var(--ease-out);
+  }
+  /* underline grows from the centre */
+  .nav-link::after {
+    content: "";
+    position: absolute;
+    left: 0.7rem;
+    right: 0.7rem;
+    bottom: 0.15rem;
+    height: 1px;
+    background: currentColor;
+    transform: scaleX(0);
+    transition: transform 0.4s var(--ease-out);
+  }
+  .nav-link:hover {
+    color: var(--color-paper);
+  }
+  .nav-link:hover::after {
+    transform: scaleX(1);
+  }
+  .nav-link.agent:hover {
+    color: var(--color-agent);
+  }
+  .nav-link.live {
+    color: var(--color-signal);
+  }
+  .nav-link.current {
+    color: var(--color-paper);
+  }
+  .nav-link.current::after {
+    transform: scaleX(1);
+    background: var(--color-paper);
+  }
+  .nav-link.agent.current {
+    color: var(--color-agent);
+  }
+
+  /* right cluster -------------------------------------------------------- */
+
+  .right {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    flex: none;
+  }
+
+  .status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    color: var(--color-signal);
+    font-size: 0.66rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding-right: 0.85rem;
+    border-right: 1px solid var(--color-rule);
+  }
+
+  .spec {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.72rem;
+    color: var(--color-agent);
+    text-decoration: none;
+    border: 1px solid var(--color-rule-hot);
+    padding: 0.42rem 0.95rem;
+    border-radius: 9999px;
+    transition:
+      background-color 0.3s var(--ease-out),
+      color 0.3s var(--ease-out),
+      box-shadow 0.3s var(--ease-out);
+  }
+  .spec .arw {
+    transition: transform 0.3s var(--ease-out);
+  }
+  .spec:hover {
+    background: var(--color-agent);
+    color: var(--color-void);
+    border-color: var(--color-agent);
+    box-shadow: var(--glow-agent);
+  }
+  .spec:hover .arw {
+    transform: translateX(3px);
+  }
+
+  .launch {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #04140f;
+    text-decoration: none;
+    background: var(--grad-brand-soft);
+    background-size: 160% 100%;
+    background-position: 0% 0%;
+    padding: 0.42rem 0.95rem;
+    border-radius: 9999px;
+    transition:
+      background-position 0.6s var(--ease-out),
+      box-shadow 0.3s var(--ease-out);
+  }
+  .launch .arw {
+    transition: transform 0.3s var(--ease-out);
+  }
+  .launch:hover {
+    background-position: 100% 0%;
+    box-shadow: var(--glow-agent);
+  }
+  .launch:hover .arw {
+    transform: translateX(3px);
+  }
+
+  /* theme toggle --------------------------------------------------------- */
+
+  /* Three themes is one too many for an icon to communicate, so the control
+     names the current one and cycles. The swatch shows that theme's accent. */
+  .theme {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex: none;
+    padding: 0.42rem 0.95rem;
+    background: none;
+    border: 1px solid var(--color-rule-hot);
+    color: var(--color-paper-dim);
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    border-radius: 9999px;
+    transition:
+      color 0.3s var(--ease-out),
+      border-color 0.3s var(--ease-out);
+  }
+  .theme:hover {
+    color: var(--color-paper);
+    border-color: var(--color-agent-deep);
+  }
+  .theme .sw {
+    width: 9px;
+    height: 9px;
+    flex: none;
+    background: var(--grad-brand-soft);
+    border-radius: 50%;
+  }
+  .theme-name {
+    min-width: 3.7rem;
+    text-align: left;
+  }
+
+  /* burger --------------------------------------------------------------- */
+
+  .burger {
+    display: none;
+    position: relative;
+    width: 40px;
+    height: 34px;
+    background: none;
+    border: 1px solid var(--color-rule-hot);
+    cursor: pointer;
+    padding: 0;
+  }
+  .burger i {
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    height: 1px;
+    background: var(--color-paper);
+    transition: transform 0.4s var(--ease-out);
+  }
+  .burger i:nth-child(2) {
+    top: 13px;
+  }
+  .burger i:nth-child(3) {
+    top: 20px;
+  }
+  .burger[aria-expanded="true"] i:nth-child(2) {
+    transform: translateY(3.5px) rotate(45deg);
+  }
+  .burger[aria-expanded="true"] i:nth-child(3) {
+    transform: translateY(-3.5px) rotate(-45deg);
+  }
+
+  /* scroll progress ------------------------------------------------------ */
+
+  .scrollbar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 1px;
+    pointer-events: none;
+  }
+  .scrollbar i {
+    display: block;
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(to right, var(--color-agent), var(--color-signal));
+    box-shadow: 0 0 10px color-mix(in srgb, var(--color-signal) 80%, transparent);
+  }
+
+  /* mobile sheet --------------------------------------------------------- */
+
+  .sheet {
+    position: fixed;
+    inset: 62px 0 0;
+    z-index: 49;
+    background: color-mix(in srgb, var(--color-void) 97%, transparent);
+    backdrop-filter: blur(20px);
+    padding: 2rem var(--spacing-gutter);
+    overflow-y: auto;
+  }
+  .sheet[hidden] {
+    display: none;
+  }
+  .sheet ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.2rem;
+  }
+  .sheet li {
+    opacity: 0;
+    transform: translateY(14px);
+    animation: sheet-in 0.5s var(--ease-out) forwards;
+    animation-delay: var(--d, 0ms);
+  }
+  @keyframes sheet-in {
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  .sheet-link {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    font-family: var(--font-display);
+    font-variation-settings: "wdth" 110;
+    font-weight: 700;
+    font-size: clamp(1.7rem, 8vw, 2.6rem);
+    letter-spacing: -0.02em;
+    color: var(--color-paper);
+    text-decoration: none;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--color-rule);
+  }
+  .sheet-link .n {
+    color: var(--color-paper-faint);
+    font-size: 0.7rem;
+  }
+  .sheet-link.agent {
+    color: var(--color-agent);
+  }
+  .sheet-link.live {
+    color: var(--color-signal);
+  }
+  .sheet-link.current .n {
+    color: var(--color-signal);
+  }
+
+  @media (max-width: 1080px) {
+    .desk,
+    .status {
+      display: none;
+    }
+    .burger {
+      display: block;
+    }
+  }
+  @media (max-width: 760px) {
+    /* Launch Agent is the primary action — skill.md gives way to it first. */
+    .spec {
+      display: none;
+    }
+  }
+  @media (max-width: 460px) {
+    .launch {
+      display: none;
+    }
+    /* No room for the wordmark beside the burger and the toggle, and the
+       mark alone is the same in both themes. */
+    .logo,
+    :global(html[data-theme="light"]) .logo {
+      width: 48px;
+      height: 24px;
+      background-image: url("/logo-mark.png");
+    }
+    .word {
+      display: none;
+    }
+  }
+</style>
+
+<script is:inline>
+  (function () {
+    var nav = document.querySelector("[data-nav]");
+    var bar = document.querySelector("[data-scroll]");
+    var burger = document.querySelector("[data-burger]");
+    var sheet = document.querySelector("[data-sheet]");
+
+    // sticky state + scroll progress, one rAF-throttled listener
+    var ticking = false;
+    function onScroll() {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(function () {
+        var y = window.scrollY || 0;
+        if (nav) nav.classList.toggle("stuck", y > 8);
+        if (bar) {
+          var h = document.documentElement.scrollHeight - window.innerHeight;
+          bar.style.width = (h > 0 ? (y / h) * 100 : 0) + "%";
+        }
+        ticking = false;
+      });
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+
+    // Theme control. The resolver in Base.astro has already set data-theme,
+    // so this only ever cycles and stores an explicit choice.
+    var THEMES = ["dark", "light", "ember", "circuit", "orbit", "vault"];
+    var META = { dark: "#050506", light: "#fdfdfc", ember: "#06070a", circuit: "#020405", orbit: "#000205", vault: "#03060a" };
+    var themeBtn = document.querySelector("[data-theme-toggle]");
+    if (themeBtn) {
+      var nameEl = themeBtn.querySelector("[data-theme-name]");
+      var meta = document.getElementById("theme-color");
+
+      function paint() {
+        var cur = document.documentElement.getAttribute("data-theme") || "dark";
+        if (nameEl) nameEl.textContent = cur;
+        var next = THEMES[(THEMES.indexOf(cur) + 1) % THEMES.length];
+        themeBtn.setAttribute("aria-label", "Theme: " + cur + ". Switch to " + next + ".");
+        if (meta) meta.setAttribute("content", META[cur] || META.dark);
+      }
+      paint();
+
+      themeBtn.addEventListener("click", function () {
+        var cur = document.documentElement.getAttribute("data-theme") || "dark";
+        var i = THEMES.indexOf(cur);
+        var next = THEMES[(i < 0 ? 0 : i + 1) % THEMES.length];
+        document.documentElement.setAttribute("data-theme", next);
+        try {
+          localStorage.setItem("midearth:theme", next);
+        } catch (e) {
+          /* private mode: the control still works, it just will not persist */
+        }
+        paint();
+      });
+    }
+
+    if (burger && sheet) {
+      burger.addEventListener("click", function () {
+        var open = burger.getAttribute("aria-expanded") === "true";
+        burger.setAttribute("aria-expanded", String(!open));
+        sheet.hidden = open;
+        document.body.style.overflow = open ? "" : "hidden";
+      });
+      sheet.addEventListener("click", function (e) {
+        if (e.target.closest("a")) {
+          burger.setAttribute("aria-expanded", "false");
+          sheet.hidden = true;
+          document.body.style.overflow = "";
+        }
+      });
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape" && !sheet.hidden) {
+          burger.setAttribute("aria-expanded", "false");
+          sheet.hidden = true;
+          document.body.style.overflow = "";
+          burger.focus();
+        }
+      });
+    }
+  })();
+</script>

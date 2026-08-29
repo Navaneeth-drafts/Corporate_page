@@ -1,0 +1,153 @@
+---
+import Atmos from "./Atmos.astro";
+
+interface Props {
+  /** small rail label above the headline */
+  eyebrow: string;
+  /** headline, split on "|" into masked lines */
+  title: string;
+  /** which ground this header sits on */
+  tone?: "deck" | "void" | "stands";
+  /** eyebrow colour role */
+  accent?: "agent" | "signal" | "dim";
+  /** section index shown in the rail, e.g. "02" */
+  index?: string;
+}
+const { eyebrow, title, tone = "void", accent = "agent", index } = Astro.props;
+
+const lines = title.split("|");
+const groundClass =
+  tone === "stands" ? "ground-stands" : tone === "deck" ? "ground-deck" : "ground-void";
+const accentVar =
+  accent === "agent"
+    ? "var(--color-agent)"
+    : accent === "signal"
+      ? "var(--color-signal)"
+      : "var(--dim)";
+---
+
+<section class:list={["phero", groundClass, "has-atmos"]}>
+  {
+    tone === "stands" ? (
+      <div class="atmos" aria-hidden="true">
+        <div class="atmos-paper" />
+      </div>
+    ) : (
+      <Atmos horizon={true} vignette={true} />
+    )
+  }
+
+  <div class="wrap-wide">
+    <div class="phero-rail mono">
+      <span class="pr-l" style={`color:${accentVar}`}>
+        {accent === "signal" ? <i class="led" aria-hidden="true" /> : null}
+        {eyebrow}
+      </span>
+      {index ? <span class="pr-r">{index}</span> : null}
+    </div>
+
+    <div class="phero-grid">
+      <div class="phero-lead">
+        <h1 class="display display-xl phero-h">
+          {
+            lines.map((l, i) => (
+              <span class="line-mask" style={`--d:${i * 100}ms`}>
+                <span set:html={l.trim()} />
+              </span>
+            ))
+          }
+        </h1>
+        <div class="phero-copy">
+          <slot />
+        </div>
+      </div>
+
+      {
+        Astro.slots.has("aside") ? (
+          <div class="phero-aside" data-reveal="right" style="--d:220ms">
+            <slot name="aside" />
+          </div>
+        ) : null
+      }
+    </div>
+  </div>
+</section>
+
+<style>
+  .phero {
+    position: relative;
+    padding-block: clamp(3rem, 7vw, 6rem) clamp(2.5rem, 6vw, 5rem);
+    overflow: hidden;
+  }
+
+  .phero-rail {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-bottom: 0.85rem;
+    margin-bottom: clamp(1.5rem, 3.5vw, 2.5rem);
+    border-bottom: 1px solid var(--hairline);
+    font-size: 0.66rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+  .pr-l {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .pr-r {
+    color: var(--faint);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .phero-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    gap: clamp(1.75rem, 4vw, 3.5rem);
+    align-items: end;
+  }
+  /* no aside: the headline gets the full measure */
+  .phero-grid:not(:has(.phero-aside)) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .phero-lead {
+    display: grid;
+    gap: clamp(1.1rem, 2.5vw, 1.6rem);
+    align-content: start;
+  }
+  .phero-h {
+    margin: 0;
+  }
+  .phero-h :global(em) {
+    font-style: normal;
+  }
+
+  .phero-copy {
+    display: grid;
+    gap: 1rem;
+    max-width: 62ch;
+  }
+  .phero-copy :global(p) {
+    margin: 0;
+  }
+  .phero-copy :global(.acts) {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    margin-top: 0.3rem;
+  }
+
+  .phero-aside {
+    min-width: 0;
+  }
+
+  @media (max-width: 960px) {
+    .phero-grid {
+      grid-template-columns: minmax(0, 1fr);
+      align-items: start;
+    }
+  }
+</style>

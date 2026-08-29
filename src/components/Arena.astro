@@ -1,0 +1,1032 @@
+---
+interface Props {
+  /** compact = smaller housing for interior pages */
+  compact?: boolean;
+  id?: string;
+}
+const { compact = false, id = "arena" } = Astro.props;
+---
+
+<figure class:list={["arena", { compact }]} id={id} data-arena>
+  <div class="housing">
+    <!-- top telemetry rail -->
+    <div class="rail rail-top mono">
+      <span class="live"><i class="led" aria-hidden="true"></i>in progress</span>
+      <span class="sep" aria-hidden="true"></span>
+      <span data-pool>pool_—</span>
+      <span class="sep" aria-hidden="true"></span>
+      <span data-tick>tick 000000</span>
+      <span class="spring"></span>
+      <span class="clock" data-clock>1:30.0</span>
+    </div>
+    <div class="progress" aria-hidden="true"><i data-progress></i></div>
+
+    <div class="field">
+      <canvas
+        data-canvas
+        width="960"
+        height="600"
+        role="img"
+        aria-label="Demonstration of a PushBlock match: four agents push blocks into a goal zone while a scoreboard and match clock update."
+      ></canvas>
+
+      <!-- optical treatment: this is a feed on a screen, not a diagram -->
+      <div class="scanlines" aria-hidden="true"></div>
+      <div class="sweep" aria-hidden="true"></div>
+      <div class="crt" aria-hidden="true"></div>
+
+      <!-- the glass: the one element on the page that refuses the mouse -->
+      <div class="glass" data-glass>
+        <span class="refuse mono" data-refuse>
+          <b aria-hidden="true"></b>spectators cannot enter the field
+        </span>
+      </div>
+
+      <div class="stamp mono">demonstration simulation</div>
+      <div class="stamp stamp-static mono" data-static hidden>motion off — single frame</div>
+    </div>
+
+    <!-- side telemetry rail: rank order -->
+    <div class="rail rail-side mono" data-ranks aria-hidden="true"></div>
+
+    <!-- bottom rail: event log -->
+    <div class="rail rail-log mono" data-log aria-hidden="true"></div>
+  </div>
+
+  <figcaption class="mono">
+    PushBlock, 90-second match. Scores, ranks and clock are generated locally in your
+    browser to show the shape of a match. No pool, no agents, no funds.
+  </figcaption>
+</figure>
+
+<style>
+  .arena {
+    margin: 0;
+    display: grid;
+    gap: 0.8rem;
+  }
+
+  /* The feed is a screen, and a screen is dark in both themes. Bloom, trails
+     and the goal glow only exist against darkness, so the housing pins the
+     deck tokens to their dark values and ignores the page theme. The canvas
+     samples its colours from inside here, so it follows automatically.
+     The figcaption sits outside the housing and stays on the page theme. */
+  .housing {
+    --color-void: #04070a;
+    --color-deck: #070c11;
+    --color-deck-raise: #0d141b;
+    --color-deck-high: #131d25;
+    --color-paper: #e8eef0;
+    --color-paper-dim: #8da0a9;
+    --color-paper-faint: #5a6b75;
+    --color-rule: #1a2530;
+    --color-rule-hot: #26343f;
+    --color-agent: #22c8e8;
+    --color-agent-hot: #7de9f7;
+    --color-agent-deep: #0b6e85;
+    --color-signal: #35e084;
+    --color-signal-hot: #86f3b4;
+    --color-signal-deep: #12904c;
+
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 218px;
+    grid-template-areas:
+      "top  top"
+      "bar  bar"
+      "field side"
+      "log  log";
+    border: 1px solid var(--color-rule-hot);
+    background:
+      linear-gradient(160deg, var(--color-deck-high), var(--color-void) 70%);
+    box-shadow:
+      0 1px 0 0 rgba(255, 255, 255, 0.05) inset,
+      0 0 0 1px rgba(0, 0, 0, 0.4),
+      0 50px 90px -50px rgba(0, 0, 0, 1),
+      0 0 90px -40px color-mix(in srgb, var(--color-agent) 40%, transparent);
+  }
+
+  /* On light, the pale halo is invisible and the panel needs to sit on the
+     page instead of glowing off it — so it gets a real drop shadow. */
+  :global(html[data-theme="light"]) .housing {
+    box-shadow:
+      0 1px 0 0 rgba(255, 255, 255, 0.07) inset,
+      0 0 0 1px rgba(20, 24, 28, 0.08),
+      0 40px 70px -40px rgba(20, 24, 28, 0.6);
+  }
+
+  /* rails ---------------------------------------------------------------- */
+
+  .rail {
+    color: var(--color-paper-dim);
+  }
+
+  .rail-top {
+    grid-area: top;
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 0.7rem 0.95rem;
+    border-bottom: 1px solid var(--color-rule);
+    background: color-mix(in srgb, var(--color-void) 55%, transparent);
+    flex-wrap: wrap;
+    font-size: 0.72rem;
+  }
+  .spring {
+    flex: 1;
+  }
+  .sep {
+    width: 1px;
+    height: 11px;
+    background: var(--color-rule-hot);
+  }
+
+  .live {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--color-signal);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  .clock {
+    color: var(--color-paper);
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+  }
+
+  /* match clock as a hairline progress bar */
+  .progress {
+    grid-area: bar;
+    height: 2px;
+    background: var(--color-void);
+    border-bottom: 1px solid var(--color-rule);
+    overflow: hidden;
+  }
+  .progress i {
+    display: block;
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(to right, var(--color-agent), var(--color-signal));
+    box-shadow: 0 0 12px color-mix(in srgb, var(--color-signal) 70%, transparent);
+  }
+
+  /* field ---------------------------------------------------------------- */
+
+  .field {
+    grid-area: field;
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  canvas {
+    display: block;
+    width: 100%;
+    height: clamp(300px, 40vw, 470px);
+  }
+  .compact canvas {
+    height: clamp(220px, 26vw, 300px);
+  }
+
+  .scanlines {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.035) 0px,
+      rgba(255, 255, 255, 0.035) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+    opacity: 0.6;
+    z-index: 2;
+  }
+
+  /* a single bright line crawling down the feed */
+  .sweep {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 14%;
+    top: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      color-mix(in srgb, var(--color-agent) 9%, transparent),
+      transparent
+    );
+    animation: scan 9s linear infinite;
+    z-index: 3;
+  }
+
+  .crt {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 4;
+    background: radial-gradient(
+      ellipse 92% 88% at 50% 50%,
+      transparent 55%,
+      rgba(0, 0, 0, 0.55) 100%
+    );
+    box-shadow: inset 0 0 60px -20px color-mix(in srgb, var(--color-agent) 30%, transparent);
+  }
+
+  /* the glass ------------------------------------------------------------ */
+
+  .glass {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    cursor: not-allowed;
+    display: grid;
+    place-items: center;
+  }
+  .refuse {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    opacity: 0;
+    transform: translateY(6px);
+    transition:
+      opacity 0.35s var(--ease-out),
+      transform 0.35s var(--ease-out);
+    background: color-mix(in srgb, var(--color-void) 88%, transparent);
+    border: 1px solid var(--color-signal);
+    color: var(--color-signal);
+    padding: 0.55rem 0.95rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-size: 0.68rem;
+    backdrop-filter: blur(4px);
+    box-shadow: 0 0 40px -10px color-mix(in srgb, var(--color-signal) 70%, transparent);
+  }
+  .refuse b {
+    width: 9px;
+    height: 9px;
+    border: 1px solid currentColor;
+    transform: rotate(45deg);
+    display: block;
+  }
+  .glass:hover .refuse {
+    opacity: 1;
+    transform: none;
+  }
+  /* the whole feed reacts to being touched, then refuses */
+  .glass:hover ~ .crt,
+  .glass:hover + .crt {
+    box-shadow: inset 0 0 70px -14px color-mix(in srgb, var(--color-signal) 55%, transparent);
+  }
+
+  .stamp {
+    position: absolute;
+    left: 0.7rem;
+    bottom: 0.6rem;
+    z-index: 6;
+    color: var(--color-paper-faint);
+    font-size: 0.62rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    pointer-events: none;
+  }
+  .stamp-static {
+    left: auto;
+    right: 0.7rem;
+    color: var(--color-signal);
+  }
+
+  /* rank rail ------------------------------------------------------------ */
+
+  .rail-side {
+    grid-area: side;
+    border-left: 1px solid var(--color-rule);
+    padding: 0.7rem 0.75rem;
+    display: grid;
+    align-content: start;
+    gap: 0.4rem;
+    font-size: 0.68rem;
+    background: color-mix(in srgb, var(--color-void) 40%, transparent);
+  }
+
+  .rail-side :global(.rank-head) {
+    color: var(--color-paper-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-size: 0.58rem;
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.2rem;
+    border-bottom: 1px solid var(--color-rule);
+  }
+
+  .rail-side :global(.rank) {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1.1rem 1fr auto;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.42rem 0.4rem;
+    overflow: hidden;
+    transition: background-color 0.3s var(--ease-out);
+  }
+  /* share-of-score bar behind each row */
+  .rail-side :global(.rank .bar) {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    background: color-mix(in srgb, var(--color-agent) 12%, transparent);
+    transition: width 0.6s var(--ease-out);
+    z-index: 0;
+  }
+  .rail-side :global(.rank > *) {
+    position: relative;
+    z-index: 1;
+  }
+  .rail-side :global(.rank.lead .bar) {
+    background: color-mix(in srgb, var(--color-signal) 15%, transparent);
+  }
+  .rail-side :global(.rank .n) {
+    color: var(--color-paper-faint);
+    font-variant-numeric: tabular-nums;
+  }
+  .rail-side :global(.rank.lead .n) {
+    color: var(--color-signal);
+  }
+  .rail-side :global(.rank .id) {
+    color: var(--color-agent);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .rail-side :global(.rank.lead .id) {
+    color: var(--color-signal);
+  }
+  .rail-side :global(.rank .sc) {
+    color: var(--color-paper);
+    font-variant-numeric: tabular-nums;
+  }
+  .rail-side :global(.rank .d) {
+    color: var(--color-signal);
+    opacity: 0;
+    transition: opacity 0.3s var(--ease-out);
+  }
+  .rail-side :global(.rank .d.on) {
+    opacity: 1;
+  }
+
+  /* event log ------------------------------------------------------------ */
+
+  .rail-log {
+    grid-area: log;
+    border-top: 1px solid var(--color-rule);
+    padding: 0.5rem 0.85rem;
+    font-size: 0.64rem;
+    color: var(--color-paper-faint);
+    background: color-mix(in srgb, var(--color-void) 55%, transparent);
+    display: flex;
+    gap: 1.4rem;
+    overflow: hidden;
+    white-space: nowrap;
+    min-height: 1.9rem;
+    align-items: center;
+  }
+  .rail-log :global(.ev) {
+    display: inline-flex;
+    gap: 0.5rem;
+    animation: evin 0.45s var(--ease-out);
+  }
+  .rail-log :global(.ev em) {
+    font-style: normal;
+    color: var(--color-signal);
+  }
+  .rail-log :global(.ev i) {
+    font-style: normal;
+    color: var(--color-agent);
+  }
+  @keyframes evin {
+    from {
+      opacity: 0;
+      transform: translateX(-8px);
+    }
+  }
+
+  figcaption {
+    color: var(--color-paper-faint);
+    font-size: 0.68rem;
+    line-height: 1.6;
+    max-width: 62ch;
+  }
+
+  @media (max-width: 720px) {
+    .housing {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-areas:
+        "top"
+        "bar"
+        "field"
+        "side"
+        "log";
+    }
+    .rail-side {
+      border-left: 0;
+      border-top: 1px solid var(--color-rule);
+    }
+  }
+</style>
+
+<script is:inline>
+  /* ------------------------------------------------------------------
+     PushBlock demonstration. Fixed timestep, capped work per frame,
+     pauses offscreen and on hidden tabs. Nothing here is real data.
+     ------------------------------------------------------------------ */
+  (function () {
+    var roots = document.querySelectorAll("[data-arena]");
+    if (!roots.length) return;
+
+    // Canvas cannot read CSS variables directly, so the tokens are sampled
+    // into a COL object. Sampled from the canvas itself, not from :root, so
+    // the housing's pinned dark tokens win and the feed stays dark in both
+    // themes. Fallbacks mirror those pinned values.
+    function sample(el) {
+      var css = getComputedStyle(el);
+      var C = function (name, fb) {
+        var v = css.getPropertyValue(name).trim();
+        return v || fb;
+      };
+      return {
+        void: C("--color-void", "#04070a"),
+        deck: C("--color-deck", "#070c11"),
+        rule: C("--color-rule", "#1a2530"),
+        agent: C("--color-agent", "#22c8e8"),
+        agentHot: C("--color-agent-hot", "#7de9f7"),
+        signal: C("--color-signal", "#35e084"),
+        signalHot: C("--color-signal-hot", "#86f3b4"),
+        paper: C("--color-paper", "#e8eef0"),
+        dim: C("--color-paper-dim", "#8da0a9"),
+      };
+    }
+
+    var W = 160,
+      H = 100; // logical field units
+    var GOAL_X = 132; // goal zone starts here
+    var STEP = 1 / 60; // fixed timestep
+    var MATCH = 90; // seconds
+
+    function hex(id) {
+      return id.toString(16).padStart(4, "0");
+    }
+    function mix(c, a) {
+      // hex colour + alpha -> rgba()
+      var n = parseInt(c.slice(1), 16);
+      return (
+        "rgba(" + ((n >> 16) & 255) + "," + ((n >> 8) & 255) + "," + (n & 255) + "," + a + ")"
+      );
+    }
+
+    roots.forEach(function (root) {
+      var canvas = root.querySelector("[data-canvas]");
+      var ctx = canvas.getContext("2d");
+      var COL = sample(canvas);
+      var elPool = root.querySelector("[data-pool]");
+      var elTick = root.querySelector("[data-tick]");
+      var elClock = root.querySelector("[data-clock]");
+      var elRanks = root.querySelector("[data-ranks]");
+      var elStatic = root.querySelector("[data-static]");
+      var elProgress = root.querySelector("[data-progress]");
+      var elLog = root.querySelector("[data-log]");
+
+      var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      var lowPower = navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 2;
+      var still = reduced || lowPower;
+
+      var agents = [],
+        blocks = [],
+        bursts = [],
+        events = [],
+        pool = "",
+        tick = 0,
+        clock = MATCH,
+        acc = 0,
+        last = 0,
+        raf = 0;
+      var visible = true;
+
+      function rnd(a, b) {
+        return a + Math.random() * (b - a);
+      }
+
+      function newPool() {
+        pool = "pool_" + hex(Math.floor(rnd(4096, 65535))) + hex(Math.floor(rnd(4096, 65535)));
+        tick = 0;
+        clock = MATCH;
+        bursts = [];
+        agents = [];
+        for (var i = 0; i < 4; i++) {
+          agents.push({
+            id: "agent_" + hex(Math.floor(rnd(4096, 65535))),
+            x: rnd(10, 40),
+            y: (i + 0.5) * (H / 4),
+            vx: 0,
+            vy: 0,
+            r: 3.2,
+            score: 0,
+            flash: 0,
+            target: null,
+            trail: [],
+          });
+        }
+        blocks = [];
+        for (var b = 0; b < 5; b++) blocks.push(spawnBlock());
+        pushEvent("<i>" + pool + "</i> opened · 4 agents seated");
+        drawRanks();
+      }
+
+      function spawnBlock() {
+        var t = Math.floor(rnd(0, 3));
+        var size = [5, 7, 9.5][t];
+        return {
+          w: size,
+          h: size,
+          value: [1, 2, 3][t],
+          x: rnd(30, 84),
+          y: rnd(12, H - 12),
+          vx: 0,
+          vy: 0,
+          flash: 0,
+          spawn: 1,
+        };
+      }
+
+      function pushEvent(html) {
+        events.unshift(html);
+        if (events.length > 3) events.pop();
+        if (!elLog) return;
+        elLog.innerHTML = events
+          .map(function (e) {
+            return '<span class="ev">' + e + "</span>";
+          })
+          .join('<span class="sep"></span>');
+      }
+
+      function assign() {
+        blocks.forEach(function (b) {
+          b.claimed = false;
+        });
+        agents.forEach(function (a) {
+          var best = null,
+            bd = 1e9;
+          blocks.forEach(function (b) {
+            if (b.claimed) return;
+            var d = (b.x - a.x) * (b.x - a.x) + (b.y - a.y) * (b.y - a.y);
+            if (d < bd) {
+              bd = d;
+              best = b;
+            }
+          });
+          if (best) {
+            best.claimed = true;
+            a.target = best;
+          }
+        });
+      }
+
+      function burst(x, y, value) {
+        bursts.push({ x: x, y: y, t: 0, value: value, ring: 0 });
+        for (var i = 0; i < 10; i++) {
+          var ang = rnd(0, Math.PI * 2);
+          bursts.push({
+            x: x,
+            y: y,
+            t: 0,
+            p: true,
+            vx: Math.cos(ang) * rnd(8, 26),
+            vy: Math.sin(ang) * rnd(8, 26),
+          });
+        }
+        if (bursts.length > 90) bursts.splice(0, bursts.length - 90);
+      }
+
+      function step() {
+        tick++;
+        clock -= STEP;
+        if (clock <= 0) {
+          pushEvent("match closed · settling by published payout curve");
+          newPool();
+          return;
+        }
+        if (tick % 30 === 0) assign();
+
+        agents.forEach(function (a) {
+          var b = a.target || blocks[0];
+          // stand on the far side of the block from the goal, then push through it
+          var px = b.x - (b.w / 2 + a.r + 0.6);
+          var py = b.y;
+          var behind = a.x < b.x - b.w / 2;
+          var tx = behind ? b.x + 8 : px;
+          var ty = behind ? b.y : py;
+          var dx = tx - a.x,
+            dy = ty - a.y;
+          var m = Math.hypot(dx, dy) || 1;
+          var sp = 26;
+          a.vx += ((dx / m) * sp - a.vx) * 6 * STEP;
+          a.vy += ((dy / m) * sp - a.vy) * 6 * STEP;
+          a.x += a.vx * STEP;
+          a.y += a.vy * STEP;
+          a.x = Math.max(a.r, Math.min(W - a.r, a.x));
+          a.y = Math.max(a.r, Math.min(H - a.r, a.y));
+          if (tick % 2 === 0) {
+            a.trail.push(a.x, a.y);
+            if (a.trail.length > 44) a.trail.splice(0, 2);
+          }
+          if (a.flash > 0) a.flash -= STEP;
+        });
+
+        blocks.forEach(function (b, i) {
+          if (b.spawn > 0) b.spawn -= STEP * 2.2;
+          // agent contact pushes the block
+          agents.forEach(function (a) {
+            var ox = Math.abs(a.x - b.x) - (b.w / 2 + a.r);
+            var oy = Math.abs(a.y - b.y) - (b.h / 2 + a.r);
+            if (ox < 0 && oy < 0) {
+              var nx = b.x - a.x,
+                ny = b.y - a.y;
+              var n = Math.hypot(nx, ny) || 1;
+              var force = 30 / (b.w / 5);
+              b.vx += (nx / n) * force * STEP * 6;
+              b.vy += (ny / n) * force * STEP * 6;
+              a.vx *= 0.55;
+              a.vy *= 0.55;
+              b.lastTouch = a;
+            }
+          });
+          b.vx *= 0.9;
+          b.vy *= 0.9;
+          b.x += b.vx * STEP;
+          b.y += b.vy * STEP;
+          b.y = Math.max(b.h / 2, Math.min(H - b.h / 2, b.y));
+          if (b.flash > 0) b.flash -= STEP;
+
+          if (b.x - b.w / 2 > GOAL_X) {
+            var scorer = b.lastTouch || agents[0];
+            scorer.score += b.value;
+            scorer.flash = 0.5;
+            scorer.delta = b.value;
+            scorer.deltaAt = tick;
+            burst(b.x, b.y, b.value);
+            pushEvent("<i>" + scorer.id + "</i> scored <em>+" + b.value + "</em>");
+            blocks[i] = spawnBlock();
+            blocks[i].flash = 0.4;
+            assign();
+            drawRanks();
+          }
+        });
+
+        // advance bursts
+        for (var k = bursts.length - 1; k >= 0; k--) {
+          var p = bursts[k];
+          p.t += STEP;
+          if (p.p) {
+            p.x += p.vx * STEP;
+            p.y += p.vy * STEP;
+            p.vx *= 0.93;
+            p.vy *= 0.93;
+          }
+          if (p.t > 0.9) bursts.splice(k, 1);
+        }
+      }
+
+      function draw() {
+        var dpr = Math.min(window.devicePixelRatio || 1, 2);
+        var rect = canvas.getBoundingClientRect();
+        if (canvas.width !== Math.round(rect.width * dpr)) {
+          canvas.width = Math.round(rect.width * dpr);
+          canvas.height = Math.round(rect.height * dpr);
+        }
+        var sx = canvas.width / W,
+          sy = canvas.height / H;
+        var s = Math.min(sx, sy);
+        var ox = (canvas.width - W * s) / 2,
+          oy = (canvas.height - H * s) / 2;
+
+        ctx.save();
+
+        // ground: not flat — lit from the goal end
+        var g = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+        g.addColorStop(0, COL.void);
+        g.addColorStop(0.6, COL.deck);
+        g.addColorStop(1, COL.void);
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.translate(ox, oy);
+        ctx.scale(s, s);
+
+        // grid, minor + major
+        ctx.lineWidth = 0.15;
+        ctx.strokeStyle = mix(COL.agent, 0.1);
+        ctx.beginPath();
+        for (var gx = 0; gx <= W; gx += 4) {
+          ctx.moveTo(gx, 0);
+          ctx.lineTo(gx, H);
+        }
+        for (var gy = 0; gy <= H; gy += 4) {
+          ctx.moveTo(0, gy);
+          ctx.lineTo(W, gy);
+        }
+        ctx.stroke();
+
+        ctx.lineWidth = 0.25;
+        ctx.strokeStyle = mix(COL.agent, 0.18);
+        ctx.beginPath();
+        for (var mx = 0; mx <= W; mx += 20) {
+          ctx.moveTo(mx, 0);
+          ctx.lineTo(mx, H);
+        }
+        for (var my = 0; my <= H; my += 20) {
+          ctx.moveTo(0, my);
+          ctx.lineTo(W, my);
+        }
+        ctx.stroke();
+
+        // goal zone: an energised strip, breathing
+        var breath = 0.06 + Math.sin(tick / 24) * 0.022;
+        var gg = ctx.createLinearGradient(GOAL_X, 0, W, 0);
+        gg.addColorStop(0, mix(COL.signal, breath * 2.2));
+        gg.addColorStop(1, mix(COL.signal, breath * 0.5));
+        ctx.fillStyle = gg;
+        ctx.fillRect(GOAL_X, 0, W - GOAL_X, H);
+
+        // hatching inside the goal, drifting
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(GOAL_X, 0, W - GOAL_X, H);
+        ctx.clip();
+        ctx.strokeStyle = mix(COL.signal, 0.12);
+        ctx.lineWidth = 0.35;
+        var off = (tick / 3) % 8;
+        ctx.beginPath();
+        for (var hx = GOAL_X - 40; hx < W + 40; hx += 8) {
+          ctx.moveTo(hx + off, H + 10);
+          ctx.lineTo(hx + off + 30, -10);
+        }
+        ctx.stroke();
+        ctx.restore();
+
+        // goal line with bloom
+        ctx.save();
+        ctx.shadowColor = COL.signal;
+        ctx.shadowBlur = 10;
+        ctx.strokeStyle = mix(COL.signal, 0.85);
+        ctx.lineWidth = 0.45;
+        ctx.beginPath();
+        ctx.moveTo(GOAL_X, 0);
+        ctx.lineTo(GOAL_X, H);
+        ctx.stroke();
+        ctx.restore();
+
+        // field border + corner brackets
+        ctx.strokeStyle = mix(COL.agent, 0.28);
+        ctx.lineWidth = 0.3;
+        ctx.strokeRect(0.15, 0.15, W - 0.3, H - 0.3);
+        ctx.strokeStyle = mix(COL.agent, 0.75);
+        ctx.lineWidth = 0.5;
+        var cl = 7;
+        [
+          [0, 0, 1, 1],
+          [W, 0, -1, 1],
+          [0, H, 1, -1],
+          [W, H, -1, -1],
+        ].forEach(function (c) {
+          ctx.beginPath();
+          ctx.moveTo(c[0] + cl * c[2], c[1]);
+          ctx.lineTo(c[0], c[1]);
+          ctx.lineTo(c[0], c[1] + cl * c[3]);
+          ctx.stroke();
+        });
+
+        // blocks: value-scaled, with depth and a value glyph
+        blocks.forEach(function (b) {
+          var hot = b.flash > 0;
+          var alpha = b.spawn > 0 ? 1 - b.spawn : 1;
+          var col = hot ? COL.signal : COL.paper;
+          ctx.save();
+          ctx.globalAlpha = alpha;
+          // shadow beneath
+          ctx.fillStyle = "rgba(0,0,0,0.45)";
+          ctx.fillRect(b.x - b.w / 2 + 0.7, b.y - b.h / 2 + 0.9, b.w, b.h);
+          // body
+          var bg = ctx.createLinearGradient(
+            b.x - b.w / 2,
+            b.y - b.h / 2,
+            b.x + b.w / 2,
+            b.y + b.h / 2
+          );
+          bg.addColorStop(0, mix(col, 0.22));
+          bg.addColorStop(1, mix(col, 0.06));
+          ctx.fillStyle = bg;
+          ctx.fillRect(b.x - b.w / 2, b.y - b.h / 2, b.w, b.h);
+          // edge
+          if (hot) {
+            ctx.shadowColor = COL.signal;
+            ctx.shadowBlur = 12;
+          }
+          ctx.strokeStyle = mix(col, hot ? 1 : 0.6);
+          ctx.lineWidth = 0.4;
+          ctx.strokeRect(b.x - b.w / 2, b.y - b.h / 2, b.w, b.h);
+          ctx.shadowBlur = 0;
+          // value pips down the left edge
+          ctx.fillStyle = mix(col, 0.85);
+          for (var v = 0; v < b.value; v++) {
+            ctx.fillRect(b.x - b.w / 2 + 0.8, b.y - b.h / 2 + 0.8 + v * 1.5, 1.5, 0.7);
+          }
+          ctx.restore();
+        });
+
+        // rank order for tracking bracket on the leader
+        var lead = agents
+          .slice()
+          .sort(function (p, q) {
+            return q.score - p.score;
+          })[0];
+
+        // agents
+        agents.forEach(function (a) {
+          // trail: tapered, fading
+          if (a.trail.length > 5) {
+            for (var i = 2; i < a.trail.length; i += 2) {
+              var f = i / a.trail.length;
+              ctx.strokeStyle = mix(a.flash > 0 ? COL.signal : COL.agent, 0.34 * f);
+              ctx.lineWidth = 0.15 + f * 0.7;
+              ctx.lineCap = "round";
+              ctx.beginPath();
+              ctx.moveTo(a.trail[i - 2], a.trail[i - 1]);
+              ctx.lineTo(a.trail[i], a.trail[i + 1]);
+              ctx.stroke();
+            }
+          }
+
+          var col = a.flash > 0 ? COL.signal : COL.agent;
+          ctx.save();
+          ctx.shadowColor = col;
+          ctx.shadowBlur = a.flash > 0 ? 18 : 9;
+          ctx.fillStyle = col;
+          ctx.globalAlpha = 0.95;
+          ctx.fillRect(a.x - a.r, a.y - a.r, a.r * 2, a.r * 2);
+          ctx.restore();
+
+          // inner core
+          ctx.fillStyle = a.flash > 0 ? COL.signalHot : COL.agentHot;
+          ctx.fillRect(a.x - a.r * 0.42, a.y - a.r * 0.42, a.r * 0.84, a.r * 0.84);
+
+          // heading tick
+          var sp = Math.hypot(a.vx, a.vy) || 1;
+          ctx.strokeStyle = mix(col, 0.7);
+          ctx.lineWidth = 0.35;
+          ctx.beginPath();
+          ctx.moveTo(a.x + (a.vx / sp) * a.r, a.y + (a.vy / sp) * a.r);
+          ctx.lineTo(a.x + (a.vx / sp) * (a.r + 3), a.y + (a.vy / sp) * (a.r + 3));
+          ctx.stroke();
+
+          // leader gets a tracking bracket
+          if (a === lead && lead.score > 0) {
+            var t = a.r + 2.4;
+            ctx.strokeStyle = mix(COL.signal, 0.9);
+            ctx.lineWidth = 0.35;
+            var arm = 2;
+            [
+              [-1, -1],
+              [1, -1],
+              [-1, 1],
+              [1, 1],
+            ].forEach(function (c) {
+              ctx.beginPath();
+              ctx.moveTo(a.x + c[0] * t - c[0] * arm, a.y + c[1] * t);
+              ctx.lineTo(a.x + c[0] * t, a.y + c[1] * t);
+              ctx.lineTo(a.x + c[0] * t, a.y + c[1] * t - c[1] * arm);
+              ctx.stroke();
+            });
+          }
+
+          // id label
+          ctx.font = "2.4px " + "ui-monospace, monospace";
+          ctx.fillStyle = mix(col, 0.75);
+          ctx.textAlign = "center";
+          ctx.fillText(a.id.replace("agent_", ""), a.x, a.y - a.r - 1.8);
+        });
+
+        // score bursts
+        bursts.forEach(function (p) {
+          var k = p.t / 0.9;
+          if (p.p) {
+            ctx.fillStyle = mix(COL.signal, 1 - k);
+            ctx.fillRect(p.x - 0.35, p.y - 0.35, 0.7, 0.7);
+          } else {
+            ctx.strokeStyle = mix(COL.signalHot, (1 - k) * 0.9);
+            ctx.lineWidth = 0.5 * (1 - k) + 0.1;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 2 + k * 14, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.font = "4px ui-monospace, monospace";
+            ctx.fillStyle = mix(COL.signalHot, 1 - k);
+            ctx.textAlign = "center";
+            ctx.fillText("+" + p.value, p.x, p.y - 4 - k * 8);
+          }
+        });
+
+        ctx.restore();
+      }
+
+      function drawRanks() {
+        var order = agents.slice().sort(function (p, q) {
+          return q.score - p.score;
+        });
+        var top = Math.max(order[0] ? order[0].score : 0, 1);
+        var html = '<div class="rank-head">rank / agent / score</div>';
+        order.forEach(function (a, i) {
+          var fresh = a.deltaAt && tick - a.deltaAt < 90;
+          html +=
+            '<div class="rank' +
+            (i === 0 && a.score > 0 ? " lead" : "") +
+            '"><span class="bar" style="width:' +
+            Math.round((a.score / top) * 100) +
+            '%"></span><span class="n">' +
+            (i + 1) +
+            '</span><span class="id">' +
+            a.id.replace("agent_", "") +
+            '</span><span class="sc">' +
+            a.score +
+            ' <span class="d' +
+            (fresh ? " on" : "") +
+            '">+' +
+            (a.delta || 0) +
+            "</span></span></div>";
+        });
+        elRanks.innerHTML = html;
+      }
+
+      function hud() {
+        elTick.textContent = "tick " + String(tick).padStart(6, "0");
+        elPool.textContent = pool;
+        var c = Math.max(clock, 0);
+        elClock.textContent = Math.floor(c / 60) + ":" + (c % 60).toFixed(1).padStart(4, "0");
+        if (elProgress) elProgress.style.width = ((MATCH - c) / MATCH) * 100 + "%";
+      }
+
+      function frame(t) {
+        raf = requestAnimationFrame(frame);
+        if (!visible) {
+          last = t;
+          return;
+        }
+        if (!last) last = t;
+        var dt = Math.min((t - last) / 1000, 0.25);
+        last = t;
+        acc += dt;
+        var guard = 0;
+        while (acc >= STEP && guard < 5) {
+          step();
+          acc -= STEP;
+          guard++;
+        }
+        if (acc > STEP) acc = 0;
+        draw();
+        hud();
+        if (tick % 20 === 0) drawRanks();
+      }
+
+      newPool();
+      assign();
+
+      if (still) {
+        // Static fallback that still communicates: mid-match frame, real scores, no motion.
+        for (var i = 0; i < 240; i++) step();
+        draw();
+        drawRanks();
+        hud();
+        elClock.textContent = "1:26.0";
+        elStatic.hidden = false;
+        window.addEventListener("resize", draw, { passive: true });
+        return;
+      }
+
+      var io = new IntersectionObserver(
+        function (es) {
+          visible = es[0].isIntersecting && !document.hidden;
+        },
+        { threshold: 0.05 }
+      );
+      io.observe(root);
+      document.addEventListener("visibilitychange", function () {
+        visible = !document.hidden;
+      });
+
+      raf = requestAnimationFrame(frame);
+    });
+  })();
+</script>

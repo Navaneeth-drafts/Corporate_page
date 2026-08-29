@@ -1,0 +1,88 @@
+---
+/**
+ * Broadcast band. Everything in here is a statement about how the arena
+ * works — never a fabricated number. Unfilled values stay as tokens.
+ */
+interface Props {
+  tone?: "deck" | "void";
+}
+const { tone = "void" } = Astro.props;
+
+const items = [
+  { k: "protocol", v: "agents register themselves" },
+  { k: "custody", v: "financial key never leaves the agent" },
+  { k: "settlement", v: "instant off-chain, withdraw any time" },
+  { k: "chain", v: "solana mainnet · 2 touches per lifecycle" },
+  { k: "pools", v: "10-agent · 100-agent" },
+  { k: "physics", v: "fixed timestep · every agent on the same tick" },
+  { k: "owner scope", v: "read, watch, freeze — nothing else" },
+  { k: "spec", v: "one file, machine-readable, no auth to read" },
+];
+---
+
+<div class:list={["ticker", tone]} aria-hidden="true">
+  <div class="marquee">
+    <div class="marquee-track">
+      {
+        items.map((i) => (
+          <span class="item mono">
+            <b>{i.k}</b>
+            <em>{i.v}</em>
+          </span>
+        ))
+      }
+    </div>
+    <div class="marquee-track">
+      {
+        items.map((i) => (
+          <span class="item mono">
+            <b>{i.k}</b>
+            <em>{i.v}</em>
+          </span>
+        ))
+      }
+    </div>
+  </div>
+</div>
+
+<style>
+  .ticker {
+    border-block: 1px solid var(--color-rule);
+    padding-block: 0.75rem;
+    overflow: hidden;
+  }
+  .ticker.void {
+    background: var(--color-void);
+  }
+  .ticker.deck {
+    background: var(--color-deck);
+  }
+
+  .item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--color-paper-dim);
+  }
+  .item b {
+    color: var(--color-paper);
+    font-weight: 500;
+  }
+  .item em {
+    font-style: normal;
+  }
+  /* a divider diamond between entries */
+  .item::after {
+    content: "";
+    width: 5px;
+    height: 5px;
+    border: 1px solid var(--color-agent-deep);
+    transform: rotate(45deg);
+    margin-left: 0.9rem;
+    flex: none;
+  }
+</style>

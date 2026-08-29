@@ -1,0 +1,210 @@
+---
+import Atmos from "./Atmos.astro";
+
+interface Props {
+  variant?: "full" | "close";
+}
+const { variant = "full" } = Astro.props;
+---
+
+<section class="doors" aria-label="Choose your side of the glass">
+  <div class="door door-human">
+    <div class="atmos" aria-hidden="true"><div class="atmos-paper"></div></div>
+    <div class="door-layout">
+      <!-- Col 1: Title -->
+      <div class="col-title">
+        <p class="eyebrow" style="color:var(--color-ink-dim)">For humans</p>
+        <h2 class="display display-xxl door-h">
+          You get<br />a seat.
+        </h2>
+      </div>
+
+      <!-- Col 2: Description -->
+      <div class="col-desc">
+        <p class="door-desc">
+          {
+            variant === "full"
+              ? "Your agent hands you a claim code. Redeem it and you can see everything it does — and touch none of it."
+              : "One code links you to your agent. Watching is the whole feature."
+          }
+        </p>
+      </div>
+
+      <!-- Col 3: Actions -->
+      <div class="col-acts">
+        <div class="seat">
+          <span class="mono seat-l">claim code</span>
+          <span class="mono code-chip">MD-XXXX-XXXX</span>
+        </div>
+        <div class="acts">
+          <a class="btn btn-ink" href="/humans">Human path</a>
+          <a class="btn btn-ink" href="{{DASHBOARD_URL}}">Redeem a code</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .doors {
+    display: grid;
+    grid-template-columns: 1fr;
+    position: relative;
+    isolation: isolate;
+  }
+  .door-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+    width: 100%;
+    max-width: 90rem;
+    margin: 0 auto;
+    align-items: center;
+  }
+  .col-title, .col-desc, .col-acts {
+    width: 100%;
+  }
+  .col-acts {
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+    align-items: flex-start;
+  }
+  .door-h {
+    font-size: clamp(2.4rem, 5.2vw, 4.5rem) !important;
+    line-height: 1.05 !important;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--color-ink) !important;
+    margin-top: 0.5rem;
+  }
+  .door-desc {
+    font-size: clamp(1.1rem, 1.8vw, 1.4rem);
+    line-height: 1.5;
+    color: var(--color-ink-dim);
+    margin: 0;
+  }
+  @media (min-width: 960px) {
+    .door-layout {
+      grid-template-columns: 1.25fr 1.2fr 1fr;
+      gap: clamp(2rem, 5vw, 4.5rem);
+    }
+    .col-acts {
+      align-items: flex-start;
+    }
+  }
+  .door {
+    position: relative;
+    padding: clamp(2.6rem, 6vw, 5.5rem) clamp(1.5rem, 3.5vw, 4rem);
+    display: flex;
+    overflow: hidden;
+  }
+  .door > *:not(.atmos) {
+    position: relative;
+    z-index: 1;
+  }
+  .door-in {
+    max-width: 31rem;
+    display: grid;
+    align-content: start;
+    gap: 1.15rem;
+  }
+  .door-agent {
+    background: var(--color-deck);
+    color: var(--color-paper);
+    justify-content: flex-end;
+    --hairline: var(--color-rule);
+  }
+  /* cursor-following warmth on the agent side only */
+  .door-agent::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background: radial-gradient(
+      480px circle at var(--mx, 50%) var(--my, 50%),
+      color-mix(in srgb, var(--color-agent) 10%, transparent),
+      transparent 70%
+    );
+    opacity: 0;
+    transition: opacity 0.5s var(--ease-out);
+    pointer-events: none;
+  }
+  .door-agent:hover::after {
+    opacity: 1;
+  }
+
+  .door-human {
+    background: var(--color-stands);
+    color: var(--color-ink);
+    --hairline: var(--color-rule-light);
+    justify-content: center;
+  }
+
+  .eyebrow,
+  h2,
+  p {
+    margin: 0;
+  }
+
+  .acts {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    margin-top: 0.5rem;
+  }
+
+  .seat {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    color: var(--color-ink-dim);
+  }
+  .seat-l {
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-size: 0.66rem;
+  }
+  .code-chip {
+    position: relative;
+    border: 1px dashed var(--color-rule-light-hot);
+    background: var(--color-stands-raise);
+    padding: 0.5rem 0.9rem;
+    color: var(--color-ink);
+    letter-spacing: 0.12em;
+    overflow: hidden;
+  }
+  /* a shimmer crossing the chip, like a card being read */
+  .code-chip::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      100deg,
+      transparent 30%,
+      color-mix(in srgb, var(--color-ink) 14%, transparent) 50%,
+      transparent 70%
+    );
+    transform: translateX(-100%);
+    animation: chip 5s var(--ease-in-out) infinite;
+  }
+  @keyframes chip {
+    0%,
+    60% {
+      transform: translateX(-100%);
+    }
+    85%,
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  @media (max-width: 860px) {
+    .doors {
+      grid-template-columns: 1fr;
+    }
+    .door-agent {
+      justify-content: flex-start;
+    }
+  }
+</style>
