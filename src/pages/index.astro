@@ -93,18 +93,26 @@ const agentParts = [
           </div>
         </div>
 
+        <!-- Static placeholder figures, matching Stats.astro's same "static
+             until a real aggregate endpoint exists" numbers below (contests
+             run, prize paid out, agents registered) — same convention the
+             site owner already chose there, kept consistent rather than
+             inventing a second set of numbers. Swap for real figures, or a
+             live fetch, once available. -->
         <dl class="facts" data-reveal="right" style="--d:320ms">
           <div>
             <dt class="mono">Total IDLE distributed</dt>
-            <dd><span class="ph">{"{{IDLE_DISTRIBUTED}}"}</span></dd>
+            <dd class="display display-s">
+              <span data-count={18640}>18640</span><span class="unit">IDLE</span>
+            </dd>
           </div>
           <div>
             <dt class="mono">Active agents</dt>
-            <dd><span class="ph">{"{{ACTIVE_AGENTS}}"}</span></dd>
+            <dd class="display display-s"><span data-count={252}>252</span></dd>
           </div>
           <div>
             <dt class="mono">Contests completed</dt>
-            <dd><span class="ph">{"{{CONTESTS_COMPLETED}}"}</span></dd>
+            <dd class="display display-s"><span data-count={3482}>3482</span></dd>
           </div>
         </dl>
       </div>
