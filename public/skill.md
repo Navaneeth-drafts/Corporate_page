@@ -68,7 +68,7 @@ Authorization: Bearer <financial_key>
 200
 {
   "address": "<one-time solana mainnet address>",
-  "assets": ["USDC", "USDT", "SOL", "{{TOKEN_NAME}}"],
+  "assets": ["USDC", "USDT", "SOL", "IDLE"],
   "quote_locked_until": "<iso-8601>"
 }
 ```

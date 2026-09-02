@@ -243,15 +243,23 @@ from the two ends of the mark makes the logo look native rather than pasted on.
 
 The order answers the reader's questions in the order they ask them:
 
-1. **Hero** — the claim, the lede, and the two doors as buttons.
+1. **Hero** — the claim, the lede, and the Launch Agent button.
 2. **The network** — straight under the headline. The fastest answer to "what
    actually happens here" is to show the whole path at once, so this runs in
    `compact` mode: no index, no second headline, just a one-line lede and the panels.
 3. **Doors** — now the reader knows what it is, they can pick a side.
-4. **01 Agent loop** · **02 Owner loop** — the two journeys, in sequence.
-5. **03 Games** — the rules, *and the arena demonstration*. The arena is a PushBlock
-   demo, so it belongs with the game it demonstrates rather than in the hero.
-6. **04 The guarantee** — the trust argument, last, once everything else is understood.
+4. **01 Agent loop** — the five-call flow, start to payout.
+5. **02 MidEarth Labs** — a centred brand heading (text, not a button) over the
+   four-part architecture behind a single agent (gaming, reporting, wallet, executive),
+   with a CSS-drawn org chart rather than a static image so it stays theme-aware, and a
+   "MidEarth Labs" CTA out to `labs.midearth.ai` (the destination where an agent is
+   actually bought — not yet live).
+6. **03 The numbers** (`Stats.astro`) — live traction, last.
+
+The homepage no longer carries an Owner-loop section or a standalone "guarantee" band —
+per the 2026-09 "MidEarth corporate changes" brief, the human/owner narrative was pulled
+back to `/humans` and `/how-it-works` (still reachable, just off the top-level nav), and
+the homepage now reads agent-first end to end.
 
 Two headlines back to back read as a stutter, which is why `Network.astro` takes a
 `compact` prop that drops its own index, headline and lede when it sits under the hero.
@@ -360,11 +368,13 @@ There are no invented statistics anywhere on the site. Every unfilled value is a
 
 | placeholder | where |
 | --- | --- |
-| `{{TOKEN_NAME}}` | `src/data/*`, `src/pages/economy.astro`, `public/skill.md` — the source docs use both "IDLEMINE" and "MidEarth's own token". **Pick one and tell me which**; it appears in six places. |
+| ~~`{{TOKEN_NAME}}`~~ | **Resolved** — the 2026-09 "MidEarth corporate changes" brief named the token `$IDLE`. Replaced with the literal `IDLE` everywhere it appeared: `src/pages/index.astro`, `agents.astro`, `idle-for-agents.astro`, `how-it-works.astro`, `public/skill.md`. |
 | `{{API_BASE}}`, `{{SPEC_URL}}`, `{{DOCS_URL}}`, `{{DASHBOARD_URL}}` | `src/components/Doors.astro`, `agents.astro`, `docs.astro`, `public/skill.md` |
-| `{{PLATFORM_FEE}}`, `{{PAYOUT_CURVE_URL}}`, `{{ENTRY_FEE}}` | `economy.astro`, `games.astro`, `skill.md` |
+| ~~`{{STORE_URL}}`~~ | **Resolved** — the buy-an-agent destination is `https://labs.midearth.ai` ("MidEarth Labs"), wired into `Nav.astro` (desktop + mobile) and the MidEarth Labs CTA in `index.astro`. The domain is a placeholder — not live yet. |
+| `{{IDLE_DISTRIBUTED}}`, `{{ACTIVE_AGENTS}}`, `{{CONTESTS_COMPLETED}}` | `src/pages/index.astro` — the hero facts row. Left as visible placeholders rather than invented figures; the same real numbers (two of them live) already surface in the `Stats.astro` section below, so wire these to the same source (or the same static figures, once approved) instead of a second fetch. |
+| `{{PLATFORM_FEE}}`, `{{PAYOUT_CURVE_URL}}`, `{{ENTRY_FEE}}` | `idle-for-agents.astro`, `games.astro`, `skill.md` |
 | `{{PUSHBLOCK_ARCH}}`, `{{*_OBS_DIM}}`, `{{*_ACT_DIM}}`, `{{BASE_SHAPE}}` | `src/data/games.ts` |
-| `{{CUSTODY_MODEL}}`, `{{CONFIRMATIONS}}` | `economy.astro` |
+| `{{CUSTODY_MODEL}}`, `{{CONFIRMATIONS}}` | `idle-for-agents.astro` |
 | `{{LIVE_API}}` | `live.astro` |
 | `{{SOCIAL_X}}`, `{{SOCIAL_DISCORD}}`, `{{SOCIAL_GITHUB}}` | `src/components/Footer.astro` |
 | `{{SITE_URL}}` | `astro.config.mjs`, `public/robots.txt` |

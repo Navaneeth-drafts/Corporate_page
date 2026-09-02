@@ -1,0 +1,133 @@
+---
+/**
+ * The MidEarth mascot (see public/logo-mark.png) redrawn small and flat for
+ * use as an icon inside diagrams — same gradient, outline and white-oval-eyes
+ * language as the real mark, but with a distinct silhouette per shape so a
+ * row of agents doesn't read as four copies of one icon. Mirrors the way the
+ * reference org-chart varies its operator shapes (circle, pill, triangle,
+ * hexagon...) while staying one character family.
+ */
+interface Props {
+  /** unique id, since the gradient def must not collide with other instances on the page */
+  id: string;
+  /** signal = the executive (green-leaning); agent = an operator (cyan-leaning) */
+  tone?: "agent" | "signal";
+  /** the silhouette — each agent gets a different one */
+  shape?: "dome" | "cloud" | "cube" | "circle";
+  size?: number;
+}
+const { id, tone = "agent", shape = "dome", size = 44 } = Astro.props;
+const gradId = `mascot-grad-${id}`;
+
+const EYES: Record<string, { x: number; y: number; rx: number; ry: number }[]> = {
+  dome: [
+    { x: 70, y: 48, rx: 7, ry: 10 },
+    { x: 87.5, y: 39, rx: 8, ry: 11 },
+  ],
+  cloud: [
+    { x: 68, y: 47, rx: 6.5, ry: 9 },
+    { x: 84, y: 40, rx: 7, ry: 9.5 },
+  ],
+  cube: [
+    { x: 71, y: 42, rx: 7, ry: 9.5 },
+    { x: 88, y: 36, rx: 7.5, ry: 10 },
+  ],
+  circle: [
+    { x: 71, y: 41, rx: 7, ry: 10 },
+    { x: 88, y: 35, rx: 7.5, ry: 10 },
+  ],
+};
+const eyes = EYES[shape];
+---
+
+<svg
+  class="mascot"
+  width={size}
+  height={size}
+  viewBox="0 0 120 100"
+  role="img"
+  aria-hidden="true"
+>
+  <defs>
+    <linearGradient id={gradId} x1="4" y1="88" x2="112" y2="10" gradientUnits="userSpaceOnUse">
+      {tone === "signal" ? (
+        <>
+          <stop offset="0%" stop-color="var(--color-agent)" />
+          <stop offset="55%" stop-color="var(--color-signal)" />
+          <stop offset="100%" stop-color="var(--color-brand-lime)" />
+        </>
+      ) : (
+        <>
+          <stop offset="0%" stop-color="var(--color-brand-blue)" />
+          <stop offset="60%" stop-color="var(--color-agent)" />
+          <stop offset="100%" stop-color="var(--color-signal)" />
+        </>
+      )}
+    </linearGradient>
+  </defs>
+
+  {
+    shape === "dome" && (
+      <path
+        d="M8,64 C8,30 30,6 60,6 C90,6 112,30 112,64 C112,76 104,84 92,84 C84,84 78,80 68,82 C60,84 54,90 44,88 C34,86 30,80 22,82 C12,84 8,76 8,64 Z"
+        fill={`url(#${gradId})`}
+        stroke="rgba(0,0,0,0.45)"
+        stroke-width="2"
+      />
+    )
+  }
+
+  {
+    shape === "cloud" && (
+      <path
+        d="M22,74 C10,74 4,64 10,55 C6,45 14,36 25,37 C26,24 40,14 54,17 C62,7 80,6 90,15 C102,14 114,23 112,35 C122,37 126,50 116,58 C120,68 112,78 100,78 Z"
+        fill={`url(#${gradId})`}
+        stroke="rgba(0,0,0,0.45)"
+        stroke-width="2"
+        stroke-linejoin="round"
+      />
+    )
+  }
+
+  {
+    shape === "cube" && (
+      <rect
+        x="16"
+        y="8"
+        width="88"
+        height="84"
+        rx="22"
+        ry="22"
+        fill={`url(#${gradId})`}
+        stroke="rgba(0,0,0,0.45)"
+        stroke-width="2"
+      />
+    )
+  }
+
+  {
+    shape === "circle" && (
+      <ellipse
+        cx="60"
+        cy="50"
+        rx="51"
+        ry="43"
+        fill={`url(#${gradId})`}
+        stroke="rgba(0,0,0,0.45)"
+        stroke-width="2"
+      />
+    )
+  }
+
+  {eyes.map((e) => (
+    <ellipse cx={e.x} cy={e.y} rx={e.rx} ry={e.ry} fill="#fff" opacity="0.97" />
+  ))}
+</svg>
+
+<style>
+  .mascot {
+    display: block;
+    flex: none;
+    filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.4));
+  }
+</style>

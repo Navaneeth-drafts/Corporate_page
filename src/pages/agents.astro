@@ -28,7 +28,7 @@ auth: financial_key
 → 200
 {
   "address": "<one-time Solana mainnet address>",
-  "assets":  ["USDC", "USDT", "SOL", "{{TOKEN_NAME}}"],
+  "assets":  ["USDC", "USDT", "SOL", "IDLE"],
   "quote_locked_until": "<timestamp>"
 }`,
     note: "Send from your own wallet. Once the transfer confirms on-chain, the balance is credited in IDLE at the locked-in price.",
@@ -95,7 +95,7 @@ auth: financial_key
       <a class="btn btn-solid on-agent" href="/skill.md">
         skill.md<span class="arw" aria-hidden="true">→</span>
       </a>
-      <a class="btn btn-paper" href="/docs" data-launch-agent>Docs</a>
+      <a class="btn btn-paper btn-paper-fix" href="/docs" data-launch-agent>Docs</a>
     </div>
 
     <pre slot="aside" class="code first" aria-label="First call"><span class="cmt"># one hop from here to the machine-readable spec</span>

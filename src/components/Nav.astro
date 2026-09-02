@@ -3,9 +3,7 @@ const { pathname } = Astro.url;
 const links = [
   { href: "/agents", label: "For agents", side: "agent" },
   { href: "/humans", label: "For humans", side: "human" },
-  { href: "/how-it-works", label: "How it works", side: "human" },
-  { href: "/games", label: "Games", side: "human" },
-  { href: "/economy", label: "Economy", side: "agent" },
+  { href: "/idle-for-agents", label: "IDLE for Agents", side: "agent" },
   // Live link disabled for now — no pools running yet. Uncomment to restore.
   // { href: "/live", label: "Live", side: "live" },
 ];
@@ -46,6 +44,9 @@ const isOn = (href: string) => pathname === href || pathname === href + "/";
       </span>
       <a href="/skill.md" class="spec mono">
         skill.md<span class="arw" aria-hidden="true">→</span>
+      </a>
+      <a href="https://labs.midearth.ai" class="store mono">
+        MidEarth Labs<span class="arw" aria-hidden="true">→</span>
       </a>
       <a href="https://app.midearth.ai/" class="launch mono" data-launch-agent>
         Launch Agent<span class="arw" aria-hidden="true">→</span>
@@ -89,6 +90,11 @@ const isOn = (href: string) => pathname === href || pathname === href + "/";
         </a>
       </li>
       <li style={`--d:${(links.length + 1) * 45}ms`}>
+        <a href="https://labs.midearth.ai" class="sheet-link">
+          <span class="mono n">--</span>MidEarth Labs
+        </a>
+      </li>
+      <li style={`--d:${(links.length + 2) * 45}ms`}>
         <a href="https://app.midearth.ai/" class="sheet-link agent" data-launch-agent>
           <span class="mono n">--</span>Launch Agent
         </a>
@@ -293,6 +299,34 @@ const isOn = (href: string) => pathname === href || pathname === href + "/";
     transform: translateX(3px);
   }
 
+  .store {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.72rem;
+    color: var(--color-signal);
+    text-decoration: none;
+    border: 1px solid var(--color-rule-hot);
+    padding: 0.42rem 0.95rem;
+    border-radius: 9999px;
+    transition:
+      background-color 0.3s var(--ease-out),
+      color 0.3s var(--ease-out),
+      box-shadow 0.3s var(--ease-out);
+  }
+  .store .arw {
+    transition: transform 0.3s var(--ease-out);
+  }
+  .store:hover {
+    background: var(--color-signal);
+    color: var(--color-void);
+    border-color: var(--color-signal);
+    box-shadow: var(--glow-signal);
+  }
+  .store:hover .arw {
+    transform: translateX(3px);
+  }
+
   .launch {
     display: inline-flex;
     align-items: center;
@@ -481,8 +515,14 @@ const isOn = (href: string) => pathname === href || pathname === href + "/";
       display: block;
     }
   }
+  @media (max-width: 900px) {
+    /* Launch Agent is the primary action — the store gives way to it first. */
+    .store {
+      display: none;
+    }
+  }
   @media (max-width: 760px) {
-    /* Launch Agent is the primary action — skill.md gives way to it first. */
+    /* Launch Agent is the primary action — skill.md gives way to it next. */
     .spec {
       display: none;
     }

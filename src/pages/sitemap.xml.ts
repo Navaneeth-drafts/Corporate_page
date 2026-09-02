@@ -6,7 +6,7 @@ const paths = [
   "/humans",
   "/how-it-works",
   "/games",
-  "/economy",
+  "/idle-for-agents",
   "/live",
   "/docs",
   "/skill.md",

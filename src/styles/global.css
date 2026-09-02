@@ -1175,6 +1175,16 @@ html[data-theme="light"] .atmos-beam {
 .btn-paper:hover {
   color: var(--color-deck);
 }
+/* `.btn`'s hover sweep fills with `currentColor`, which is *live* — so on a
+   `.btn-paper` the fill and the text both flip to `--color-deck` on hover and
+   the label disappears into its own background. `.btn-ink` avoids this with
+   an explicit `:hover::before` override; add `.btn-paper-fix` alongside
+   `.btn-paper` to opt an individual button into the same fix (scoped, not
+   applied to every `.btn-paper` — see "Docs" in agents.astro and "Watch a
+   match" in humans.astro). */
+.btn-paper-fix:hover::before {
+  background: var(--color-paper);
+}
 .btn-signal {
   color: var(--color-signal);
 }
