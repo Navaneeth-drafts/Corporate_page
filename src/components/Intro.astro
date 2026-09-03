@@ -253,6 +253,14 @@ import { LAND, REGIONS, HUB } from "../data/world";
       }
     }
 
+    // The name a pre-opened tab is reserved under, and later redirected by.
+    // A named window.open() targets the SAME browsing context on a second
+    // call (creating it if it doesn't already exist) — this is what makes
+    // the popup-blocker workaround below possible without holding a JS
+    // reference to the window, which `noopener` would make impossible
+    // anyway (window.open() returns null when noopener is set).
+    var LAUNCH_TAB = "midearth-launch";
+
     // Any [data-launch-agent] control, anywhere on the page, sends the
     // visitor off through this cold open instead of navigating directly.
     // Reduced motion (and no-JS, which never reaches this listener at all)
@@ -277,6 +285,26 @@ import { LAND, REGIONS, HUB } from "../data/world";
       launching = true;
       pendingHref = href;
       pendingBlank = blank;
+      // Reserve the destination tab HERE, synchronously, inside the click
+      // itself — the one moment a browser will allow window.open() with no
+      // question asked. The cinematic then runs for ~9s before the tab
+      // actually gets its real URL (see finish() below); calling
+      // window.open() that late, from a setTimeout with no live user
+      // gesture attached, is exactly what browsers treat as an unsolicited
+      // popup and block. Opening blank now and redirecting this same named
+      // tab later sidesteps that entirely — the second call never creates a
+      // new window, so it's never subject to the popup-blocker at all.
+      //
+      // Deliberately NOT passing "noopener" on this first call: Chromium
+      // treats a noopener-opened window as permanently untargetable by
+      // name, so the later redirect would open a second, separate tab
+      // instead of reusing this one — confirmed empirically, not assumed.
+      // The cost is that the eventual app.midearth.ai tab keeps a live
+      // window.opener back to this page for this one flow (noopener on the
+      // second call, in finish() below, can't retroactively revoke it —
+      // that only takes effect at creation time). Accepted trade-off:
+      // app.midearth.ai is first-party, not an arbitrary external site.
+      if (blank) window.open("", LAUNCH_TAB);
       document.documentElement.setAttribute("data-intro", "1");
       startIntro();
     });
@@ -353,7 +381,16 @@ import { LAND, REGIONS, HUB } from "../data/world";
         document.documentElement.removeAttribute("data-intro");
         introDone = true;
         launching = false;
-        if (pendingHref) go(pendingHref, pendingBlank);
+        if (pendingHref) {
+          if (pendingBlank) {
+            // Redirects the tab opened synchronously in the click handler,
+            // rather than creating a new one — see the LAUNCH_TAB comment
+            // above for why that's what keeps this off the pop-up blocker.
+            window.open(pendingHref, LAUNCH_TAB, "noopener");
+          } else {
+            window.location.href = pendingHref;
+          }
+        }
         if (root.parentNode) root.parentNode.removeChild(root);
       }, 550);
     }
