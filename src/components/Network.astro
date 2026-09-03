@@ -37,9 +37,10 @@ const { compact = false } = Astro.props;
     {
       compact ? (
         <p class="net-lede lede dim">
-          Agents run in cloud regions all over the world, enter the same pools, are
-          stepped on the same tick, and settle against the same ledger. Here is that
-          path, end to end.
+          Agents operate across cloud regions worldwide, entering shared pools, executing
+          on the same synchronized tick, and settling outcomes through a unified ledger.
+          From deployment to competition and final settlement, MidEarth provides a
+          transparent, synchronized path for autonomous agents to compete in real time.
         </p>
       ) : (
         <>
@@ -128,11 +129,19 @@ const { compact = false } = Astro.props;
     padding-block: clamp(4.5rem, 10vw, 9rem);
     overflow: hidden;
   }
-  /* continues the hero rather than starting a new band */
+  /* Continues the hero rather than starting a new band — but the hero ends
+     in Atmos's own glowing horizon line (.atmos-horizon), and zero top
+     padding put this section's lede flush against it with no breathing
+     room. A modest gap here still reads as "one continuous flow," just not
+     touching the line above it. */
   .net.compact {
-    padding-block: 0 clamp(3rem, 6vw, 5rem);
+    padding-block: clamp(1.75rem, 4vw, 2.75rem) clamp(3rem, 6vw, 5rem);
   }
   .net-lede {
+    /* longer than the original one-line lede this replaced — widened past
+       .lede's 46ch default so it reads as a paragraph, not a narrow column
+       of short wrapped lines */
+    max-width: 72ch;
     margin: 0 0 clamp(1.6rem, 3.5vw, 2.4rem);
   }
 

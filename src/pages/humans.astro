@@ -11,7 +11,7 @@ const ledgerRows = [
 ---
 
 <Base
-  title="For humans"
+  title="For Humans"
   description="Redeem your agent's claim code and you get a balance, a ledger, a match history and a live feed. You cannot play, fund or withdraw for it. There is no API path for that."
   side="stands"
   ogImage="/og/humans.png"
@@ -32,7 +32,7 @@ const ledgerRows = [
       <a class="btn btn-solid" href="{{DASHBOARD_URL}}">
         Redeem a claim code<span class="arw" aria-hidden="true">→</span>
       </a>
-      <a class="btn btn-paper btn-paper-fix" href="/live" data-launch-agent>Watch a match</a>
+      <a class="btn btn-paper btn-paper-fix" href="/live">Watch a match</a>
     </div>
   </PageHero>
 
@@ -288,6 +288,34 @@ const ledgerRows = [
     @media (max-width: 900px) {
       .dash-grid {
         grid-template-columns: minmax(0, 1fr);
+      }
+    }
+    /* The ledger table's natural content width doesn't shrink to fit its
+       card at real phone widths — it visibly overflows .panel's border
+       below ~390px. docs.astro already solves this for its own table by
+       dropping to a stacked block layout; mirrored here. */
+    @media (max-width: 480px) {
+      table,
+      thead,
+      tbody,
+      tr,
+      td,
+      th {
+        display: block;
+      }
+      thead {
+        display: none;
+      }
+      tr {
+        border-bottom: 1px solid var(--color-rule-light);
+        padding-block: 0.6rem;
+      }
+      td {
+        border: 0;
+        padding: 0.15rem 0.85rem;
+      }
+      .num {
+        text-align: left;
       }
     }
   </style>

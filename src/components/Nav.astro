@@ -1,8 +1,8 @@
 ---
 const { pathname } = Astro.url;
 const links = [
-  { href: "/agents", label: "For agents", side: "agent" },
-  { href: "/humans", label: "For humans", side: "human" },
+  { href: "/agents", label: "For Agents", side: "agent" },
+  { href: "/humans", label: "For Humans", side: "human" },
   { href: "/idle-for-agents", label: "IDLE for Agents", side: "agent" },
   // Live link disabled for now — no pools running yet. Uncomment to restore.
   // { href: "/live", label: "Live", side: "live" },
@@ -14,10 +14,13 @@ const isOn = (href: string) => pathname === href || pathname === href + "/";
   <a class="skip" href="#main">Skip to content</a>
 
   <div class="wrap-wide nav-inner">
-    <a href="/" class="wordmark" aria-label="MidEarth, home">
-      <span class="logo" aria-hidden="true"></span>
-      <span class="word">MidEarth</span>
-    </a>
+    <div class="brand-group">
+      <a href="/" class="wordmark" aria-label="MidEarth, home">
+        <span class="logo" aria-hidden="true"></span>
+        <span class="word">MidEarth</span>
+      </a>
+      <span class="alpha mono" aria-label="Alpha release">ALPHA</span>
+    </div>
 
     <nav aria-label="Primary" class="desk">
       <ul>
@@ -45,10 +48,10 @@ const isOn = (href: string) => pathname === href || pathname === href + "/";
       <a href="/skill.md" class="spec mono">
         skill.md<span class="arw" aria-hidden="true">→</span>
       </a>
-      <a href="https://labs.midearth.ai" class="store mono">
+      <a href="/labs" class="store mono">
         MidEarth Labs<span class="arw" aria-hidden="true">→</span>
       </a>
-      <a href="https://app.midearth.ai/" class="launch mono" data-launch-agent>
+      <a href="https://app.midearth.ai/" class="launch mono" target="_blank" rel="noopener" data-launch-agent>
         Launch Agent<span class="arw" aria-hidden="true">→</span>
       </a>
 
@@ -90,12 +93,12 @@ const isOn = (href: string) => pathname === href || pathname === href + "/";
         </a>
       </li>
       <li style={`--d:${(links.length + 1) * 45}ms`}>
-        <a href="https://labs.midearth.ai" class="sheet-link">
+        <a href="/labs" class="sheet-link">
           <span class="mono n">--</span>MidEarth Labs
         </a>
       </li>
       <li style={`--d:${(links.length + 2) * 45}ms`}>
-        <a href="https://app.midearth.ai/" class="sheet-link agent" data-launch-agent>
+        <a href="https://app.midearth.ai/" class="sheet-link agent" target="_blank" rel="noopener" data-launch-agent>
           <span class="mono n">--</span>Launch Agent
         </a>
       </li>
@@ -157,12 +160,30 @@ const isOn = (href: string) => pathname === href || pathname === href + "/";
 
   /* wordmark ------------------------------------------------------------- */
 
+  .brand-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex: none;
+  }
+
   .wordmark {
     display: inline-flex;
     align-items: center;
     gap: 0.55rem;
     text-decoration: none;
     flex: none;
+  }
+
+  .alpha {
+    flex: none;
+    color: var(--color-signal);
+    border: 1px solid var(--color-signal);
+    border-radius: 9999px;
+    padding: 0.18rem 0.55rem;
+    font-size: 0.62rem;
+    letter-spacing: 0.12em;
+    line-height: 1;
   }
 
   /* Mark only — the lockup PNGs carry no wordmark, so "MidEarth" is set as
@@ -527,19 +548,26 @@ const isOn = (href: string) => pathname === href || pathname === href + "/";
       display: none;
     }
   }
-  @media (max-width: 460px) {
+  @media (max-width: 560px) {
+    /* Below 760px only .launch and the full theme toggle are left in .right
+       (skill.md and the store pill are already gone by then), and their
+       combined width — full "Launch Agent →" pill plus full "● DARK" label
+       plus the wordmark and ALPHA badge — doesn't actually fit until ~560px.
+       Between 460 and ~549px that pushed the burger button fully off-screen
+       and unreachable, not just visually cramped. The mobile sheet already
+       carries its own Launch Agent link, so it's safe to drop the header
+       pill here rather than shrink everything to fit. */
     .launch {
       display: none;
     }
-    /* No room for the wordmark beside the burger and the toggle, and the
-       mark alone is the same in both themes. */
-    .logo,
-    :global(html[data-theme="light"]) .logo {
-      width: 48px;
-      height: 24px;
-      background-image: url("/logo-mark.png");
+    /* Keeping the wordmark and ALPHA badge visible at this width (matching
+       desktop) leaves no room for the toggle's text label alongside the
+       burger — collapse it to the swatch dot alone, still fully functional,
+       state still carried in its aria-label. */
+    .theme {
+      padding: 0.42rem 0.65rem;
     }
-    .word {
+    .theme-name {
       display: none;
     }
   }

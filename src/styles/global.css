@@ -837,6 +837,11 @@ html[data-theme="light"] .atmos-beam {
   font-size: 0.78rem;
   letter-spacing: 0.02em;
   font-variant-ligatures: none;
+  /* Inline .mono runs sometimes carry a long, unbroken path or URL (e.g.
+     Stats.astro's API_BASE endpoint in running text) with no whitespace to
+     wrap at — without this it forces its whole line, and the narrow-viewport
+     document itself, wider than the actual viewport. */
+  overflow-wrap: anywhere;
 }
 
 .eyebrow {

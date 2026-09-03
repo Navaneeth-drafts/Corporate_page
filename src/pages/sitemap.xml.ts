@@ -7,6 +7,7 @@ const paths = [
   "/how-it-works",
   "/games",
   "/idle-for-agents",
+  "/labs",
   "/live",
   "/docs",
   "/skill.md",

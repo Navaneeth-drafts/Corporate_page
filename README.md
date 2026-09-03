@@ -252,8 +252,9 @@ The order answers the reader's questions in the order they ask them:
 5. **02 MidEarth Labs** — a centred brand heading (text, not a button) over the
    four-part architecture behind a single agent (gaming, reporting, wallet, executive),
    with a CSS-drawn org chart rather than a static image so it stays theme-aware, and a
-   "MidEarth Labs" CTA out to `labs.midearth.ai` (the destination where an agent is
-   actually bought — not yet live).
+   "MidEarth Labs" CTA to `/labs` — the destination where an agent will actually be
+   bought, currently a "coming soon" page (`src/pages/labs.astro`) since it isn't
+   built yet.
 6. **03 The numbers** (`Stats.astro`) — live traction, last.
 
 The homepage no longer carries an Owner-loop section or a standalone "guarantee" band —
@@ -370,7 +371,7 @@ There are no invented statistics anywhere on the site. Every unfilled value is a
 | --- | --- |
 | ~~`{{TOKEN_NAME}}`~~ | **Resolved** — the 2026-09 "MidEarth corporate changes" brief named the token `$IDLE`. Replaced with the literal `IDLE` everywhere it appeared: `src/pages/index.astro`, `agents.astro`, `idle-for-agents.astro`, `how-it-works.astro`, `public/skill.md`. |
 | `{{API_BASE}}`, `{{SPEC_URL}}`, `{{DOCS_URL}}`, `{{DASHBOARD_URL}}` | `src/components/Doors.astro`, `agents.astro`, `docs.astro`, `public/skill.md` |
-| ~~`{{STORE_URL}}`~~ | **Resolved** — the buy-an-agent destination is `https://labs.midearth.ai` ("MidEarth Labs"), wired into `Nav.astro` (desktop + mobile) and the MidEarth Labs CTA in `index.astro`. The domain is a placeholder — not live yet. |
+| ~~`{{STORE_URL}}`~~ | **Resolved** — the buy-an-agent destination is `/labs` ("MidEarth Labs"), wired into `Nav.astro` (desktop + mobile) and the MidEarth Labs CTA in `index.astro`. `src/pages/labs.astro` is a real page, but its content is a "coming soon" placeholder — the actual storefront isn't built yet. |
 | ~~`{{IDLE_DISTRIBUTED}}`, `{{ACTIVE_AGENTS}}`, `{{CONTESTS_COMPLETED}}`~~ | **Resolved (static, not live)** — the hero facts row in `index.astro` now mirrors `Stats.astro`'s own static numbers (prize paid out, agents registered, contests run), the same "ship a static figure rather than a placeholder token" convention the site owner already chose there. Swap for real figures, or wire a live fetch, once available. |
 | `{{PLATFORM_FEE}}`, `{{PAYOUT_CURVE_URL}}`, `{{ENTRY_FEE}}` | `idle-for-agents.astro`, `games.astro`, `skill.md` |
 | `{{PUSHBLOCK_ARCH}}`, `{{*_OBS_DIM}}`, `{{*_ACT_DIM}}`, `{{BASE_SHAPE}}` | `src/data/games.ts` |

@@ -241,27 +241,52 @@ import { LAND, REGIONS, HUB } from "../data/world";
     var reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     var started = false;
     var launching = false;
+    var introDone = false;
     var pendingHref = null;
+    var pendingBlank = false;
+
+    function go(href, blank) {
+      if (blank) {
+        window.open(href, "_blank", "noopener");
+      } else {
+        window.location.href = href;
+      }
+    }
 
     // Any [data-launch-agent] control, anywhere on the page, sends the
     // visitor off through this cold open instead of navigating directly.
     // Reduced motion (and no-JS, which never reaches this listener at all)
     // goes straight to the href — the real link is still there underneath.
+    // The cinematic is a once-per-page-load send-off, not a repeating
+    // gimmick: after it has played once, further clicks (e.g. clicking
+    // Launch Agent again after it already opened a tab) go straight to the
+    // href, same as a plain link — matching how MidEarth Labs already
+    // behaves on every click, since that one was never intercepted here.
     document.addEventListener("click", function (e) {
       var trigger = e.target.closest("[data-launch-agent]");
       if (!trigger) return;
       var href = trigger.getAttribute("href");
       if (!href) return;
+      var blank = trigger.getAttribute("target") === "_blank";
       e.preventDefault();
-      if (reducedMotion) {
-        window.location.href = href;
+      if (reducedMotion || introDone) {
+        go(href, blank);
         return;
       }
       if (launching) return;
       launching = true;
       pendingHref = href;
+      pendingBlank = blank;
       document.documentElement.setAttribute("data-intro", "1");
       startIntro();
+    });
+
+    // Defence in depth alongside the finish() cleanup above: if this exact
+    // document is ever restored from the back-forward cache while still
+    // mid-intro for any reason, this guarantees the overlay attribute — and
+    // the body scroll lock it drives — can never survive a restore.
+    window.addEventListener("pageshow", function (e) {
+      if (e.persisted) document.documentElement.removeAttribute("data-intro");
     });
 
     // ?intro=1 forces a preview on load, for design review. pendingHref stays
@@ -315,11 +340,20 @@ import { LAND, REGIONS, HUB } from "../data/world";
       done = true;
       root.classList.add("out");
       setTimeout(function () {
-        if (pendingHref) {
-          window.location.href = pendingHref;
-          return;
-        }
+        // Clean up unconditionally, not just on the no-destination path.
+        // Skipping this when pendingHref was set left `data-intro` (and the
+        // `body { overflow: hidden }` it drives) on the outgoing document —
+        // invisible in the moment since we were navigating away regardless,
+        // but if the browser later restored that document from bfcache on
+        // a back-button press, it came back permanently unscrollable with
+        // the overlay attribute still set: exactly what read as "back gets
+        // stuck on the animation." The cinematic never replays after this
+        // point either way (see introDone in the click handler above), so
+        // there's nothing left needing this DOM node — always remove it.
         document.documentElement.removeAttribute("data-intro");
+        introDone = true;
+        launching = false;
+        if (pendingHref) go(pendingHref, pendingBlank);
         if (root.parentNode) root.parentNode.removeChild(root);
       }, 550);
     }
