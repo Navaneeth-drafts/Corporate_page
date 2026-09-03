@@ -2,34 +2,48 @@
 import { LAND, REGIONS, HUB } from "../data/world";
 
 /**
- * Cold open — an eight-second title sequence in four beats:
+ * The cold-open cinematic — an eight-second title sequence in four beats:
  * data centres → AI agents → the match → settlement. The same four beats the
- * network section explains, drawn from the same world data so it reads as the
- * same world, then hands off to the real app.
+ * network section explains, drawn from the same world data so it reads as
+ * the same world.
  *
  * What makes it filmic rather than a loading spinner:
  *   - a camera that pushes in on the arena for the match and pulls back for
  *     settlement, so the frame has intent instead of just contents
- *   - letterbox bars that shut at the end, revealing the page behind them
+ *   - letterbox bars that shut at the end, revealing what's behind them
  *   - a telemetry column in screen space that fills as each beat runs
  *   - eased beat transitions, so nothing arrives at a constant rate
  *
- * Trigger: NOT page load. This component sits on every page (via Base.astro)
- * hidden by CSS, and only plays when the visitor clicks a "Launch Agent"
- * control — any element marked [data-launch-agent] with an href, anywhere
- * on the site (nav, hero, mobile sheet, ...). It is the send-off before
- * app.midearth.ai, not a splash screen. ?intro=1 forces a load-time preview
- * for design review; that path never redirects on dismiss.
+ * Two ways this component is used:
+ *
+ *   1. `redirectTo` set — src/pages/launching.astro only. The whole point of
+ *      that page IS this cinematic: it starts immediately on load (no click
+ *      to wait for, the visitor already clicked "Launch Agent" to get here)
+ *      and redirects the SAME tab to `redirectTo` when it finishes. A plain
+ *      same-tab redirect is never subject to the browser's pop-up blocker,
+ *      no matter the delay — only *creating* a new tab is, which is exactly
+ *      why the cinematic moved to its own page instead of playing on the
+ *      original tab and opening `redirectTo` in a new one afterwards (the
+ *      earlier approach, which needed an ugly synchronous-placeholder-tab
+ *      workaround and had the awkward side effect of not actually being
+ *      the tab the visitor's focus jumps to).
+ *
+ *   2. `redirectTo` unset — every other page, via Base.astro. Sits hidden
+ *      by CSS; the only way to see it is `?intro=1`, a design-review
+ *      convenience. No control on the site triggers it by click anymore.
  *
  * Safety rules, because a splash screen that gets stuck is worse than none:
  *   - display:none by default. Only html[data-intro] reveals it.
- *   - Skipped entirely under prefers-reduced-motion — the click goes
- *     straight to the destination URL instead.
- *   - Dismissable by click, Esc, space, or the skip button — each of those
- *     skips straight to the destination too, since the visitor already
- *     chose to leave.
+ *   - Skipped entirely under prefers-reduced-motion — redirectTo mode goes
+ *     straight to the destination; preview mode just never shows it.
+ *   - Dismissable by click, Esc, space, or the skip button.
  *   - A hard failsafe finishes it regardless of what else went wrong.
  */
+interface Props {
+  /** Set only on src/pages/launching.astro — see the component doc above. */
+  redirectTo?: string;
+}
+const { redirectTo } = Astro.props;
 ---
 
 <div class="intro" data-intro-root aria-hidden="true">
@@ -233,94 +247,42 @@ import { LAND, REGIONS, HUB } from "../data/world";
   }
 </style>
 
-<script is:inline define:vars={{ LAND, REGIONS, HUB }}>
+<script is:inline define:vars={{ LAND, REGIONS, HUB, redirectTo }}>
   (function () {
     var root = document.querySelector("[data-intro-root]");
     if (!root) return;
 
     var reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     var started = false;
-    var launching = false;
-    var introDone = false;
-    var pendingHref = null;
-    var pendingBlank = false;
 
-    function go(href, blank) {
-      if (blank) {
-        window.open(href, "_blank", "noopener");
+    if (redirectTo) {
+      // src/pages/launching.astro: the cinematic IS the page, so it starts
+      // the moment this script runs — nothing to wait for, the visitor
+      // already clicked "Launch Agent" to land here. Reduced motion skips
+      // straight through rather than forcing the animation on someone who
+      // asked for less of it.
+      if (reducedMotion) {
+        window.location.href = redirectTo;
       } else {
-        window.location.href = href;
+        document.documentElement.setAttribute("data-intro", "1");
+        startIntro();
       }
+    } else if (document.documentElement.hasAttribute("data-intro")) {
+      // Every other page: the intro sits hidden and only ever shows via
+      // ?intro=1, a design-review convenience — no on-page control triggers
+      // it by click anymore. "Launch Agent" is a plain link straight to
+      // /launching now, which is where the real cinematic lives (see the
+      // component doc above for why).
+      startIntro();
     }
 
-    // The name a pre-opened tab is reserved under, and later redirected by.
-    // A named window.open() targets the SAME browsing context on a second
-    // call (creating it if it doesn't already exist) — this is what makes
-    // the popup-blocker workaround below possible without holding a JS
-    // reference to the window, which `noopener` would make impossible
-    // anyway (window.open() returns null when noopener is set).
-    var LAUNCH_TAB = "midearth-launch";
-
-    // Any [data-launch-agent] control, anywhere on the page, sends the
-    // visitor off through this cold open instead of navigating directly.
-    // Reduced motion (and no-JS, which never reaches this listener at all)
-    // goes straight to the href — the real link is still there underneath.
-    // The cinematic is a once-per-page-load send-off, not a repeating
-    // gimmick: after it has played once, further clicks (e.g. clicking
-    // Launch Agent again after it already opened a tab) go straight to the
-    // href, same as a plain link — matching how MidEarth Labs already
-    // behaves on every click, since that one was never intercepted here.
-    document.addEventListener("click", function (e) {
-      var trigger = e.target.closest("[data-launch-agent]");
-      if (!trigger) return;
-      var href = trigger.getAttribute("href");
-      if (!href) return;
-      var blank = trigger.getAttribute("target") === "_blank";
-      e.preventDefault();
-      if (reducedMotion || introDone) {
-        go(href, blank);
-        return;
-      }
-      if (launching) return;
-      launching = true;
-      pendingHref = href;
-      pendingBlank = blank;
-      // Reserve the destination tab HERE, synchronously, inside the click
-      // itself — the one moment a browser will allow window.open() with no
-      // question asked. The cinematic then runs for ~9s before the tab
-      // actually gets its real URL (see finish() below); calling
-      // window.open() that late, from a setTimeout with no live user
-      // gesture attached, is exactly what browsers treat as an unsolicited
-      // popup and block. Opening blank now and redirecting this same named
-      // tab later sidesteps that entirely — the second call never creates a
-      // new window, so it's never subject to the popup-blocker at all.
-      //
-      // Deliberately NOT passing "noopener" on this first call: Chromium
-      // treats a noopener-opened window as permanently untargetable by
-      // name, so the later redirect would open a second, separate tab
-      // instead of reusing this one — confirmed empirically, not assumed.
-      // The cost is that the eventual app.midearth.ai tab keeps a live
-      // window.opener back to this page for this one flow (noopener on the
-      // second call, in finish() below, can't retroactively revoke it —
-      // that only takes effect at creation time). Accepted trade-off:
-      // app.midearth.ai is first-party, not an arbitrary external site.
-      if (blank) window.open("", LAUNCH_TAB);
-      document.documentElement.setAttribute("data-intro", "1");
-      startIntro();
-    });
-
-    // Defence in depth alongside the finish() cleanup above: if this exact
-    // document is ever restored from the back-forward cache while still
-    // mid-intro for any reason, this guarantees the overlay attribute — and
-    // the body scroll lock it drives — can never survive a restore.
+    // Defence in depth: if this document is ever restored from the
+    // back-forward cache while still mid-intro for any reason, this
+    // guarantees the overlay attribute — and the body scroll lock it
+    // drives — can never survive a restore.
     window.addEventListener("pageshow", function (e) {
       if (e.persisted) document.documentElement.removeAttribute("data-intro");
     });
-
-    // ?intro=1 forces a preview on load, for design review. pendingHref stays
-    // null on this path, so dismissing it just reveals the page underneath
-    // instead of redirecting anywhere.
-    if (document.documentElement.hasAttribute("data-intro")) startIntro();
 
     function startIntro() {
       if (started) return;
@@ -368,30 +330,14 @@ import { LAND, REGIONS, HUB } from "../data/world";
       done = true;
       root.classList.add("out");
       setTimeout(function () {
-        // Clean up unconditionally, not just on the no-destination path.
-        // Skipping this when pendingHref was set left `data-intro` (and the
-        // `body { overflow: hidden }` it drives) on the outgoing document —
-        // invisible in the moment since we were navigating away regardless,
-        // but if the browser later restored that document from bfcache on
-        // a back-button press, it came back permanently unscrollable with
-        // the overlay attribute still set: exactly what read as "back gets
-        // stuck on the animation." The cinematic never replays after this
-        // point either way (see introDone in the click handler above), so
-        // there's nothing left needing this DOM node — always remove it.
         document.documentElement.removeAttribute("data-intro");
-        introDone = true;
-        launching = false;
-        if (pendingHref) {
-          if (pendingBlank) {
-            // Redirects the tab opened synchronously in the click handler,
-            // rather than creating a new one — see the LAUNCH_TAB comment
-            // above for why that's what keeps this off the pop-up blocker.
-            window.open(pendingHref, LAUNCH_TAB, "noopener");
-          } else {
-            window.location.href = pendingHref;
-          }
+        if (redirectTo) {
+          // Same-tab navigation, never subject to the pop-up blocker no
+          // matter how long the cinematic ran first.
+          window.location.href = redirectTo;
+        } else if (root.parentNode) {
+          root.parentNode.removeChild(root);
         }
-        if (root.parentNode) root.parentNode.removeChild(root);
       }, 550);
     }
     setTimeout(finish, 12000); // hard failsafe

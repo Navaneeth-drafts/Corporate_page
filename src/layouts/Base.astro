@@ -10,6 +10,11 @@ interface Props {
   /** Which side of the glass this page belongs to. */
   side?: "deck" | "stands" | "seam";
   ogImage?: string;
+  /** Skips Intro/Nav/Footer and the <main> chrome — for standalone,
+   * full-viewport pages that manage their own content end to end
+   * (src/pages/launching.astro is the only one today). Everything else
+   * (theme resolution before paint, fonts, global.css) still applies. */
+  bare?: boolean;
 }
 
 const {
@@ -17,6 +22,7 @@ const {
   description,
   side = "stands",
   ogImage = "/og/default.png",
+  bare = false,
 } = Astro.props;
 
 const fullTitle = `${title} — MidEarth`;
@@ -73,10 +79,10 @@ const bodyClass =
         var bar = { dark: "#050506", light: "#fdfdfc", ember: "#06070a", circuit: "#020405", orbit: "#000205", vault: "#03060a" };
         if (m) m.setAttribute("content", bar[t] || bar.dark);
 
-        // Cold-open: does NOT play on page load/refresh. It plays only when
-        // the visitor clicks a "Launch Agent" control (see Intro.astro,
-        // which wires up every [data-launch-agent] element) — the title
-        // sequence is a send-off into the app, not a splash screen.
+        // Cold-open: does NOT play on this page. Every "Launch Agent"
+        // control is a plain link straight to /launching now (see that
+        // page and Intro.astro's doc comment) — the cinematic only exists
+        // here, on ordinary pages, for design review.
         //
         //   ?intro=1  force a preview on load, for design review
         // Reduced motion always skips straight to the destination.
@@ -133,13 +139,20 @@ const bodyClass =
       </style>
     </noscript>
 
-    <Intro />
-
-    <Nav />
-    <main id="main">
-      <slot />
-    </main>
-    <Footer />
+    {
+      bare ? (
+        <slot />
+      ) : (
+        <>
+          <Intro />
+          <Nav />
+          <main id="main">
+            <slot />
+          </main>
+          <Footer />
+        </>
+      )
+    }
 
     <script is:inline>
       /* ----------------------------------------------------------------

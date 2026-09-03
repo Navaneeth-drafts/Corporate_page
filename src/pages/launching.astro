@@ -1,0 +1,60 @@
+---
+import Base from "../layouts/Base.astro";
+import Intro from "../components/Intro.astro";
+
+/**
+ * The destination for every "Launch Agent" control on the site — a plain
+ * link, opened in a new tab, straight to this page. This page IS the
+ * cold-open cinematic (see Intro.astro's doc comment for why it moved here
+ * instead of playing on the original tab): it starts immediately on load
+ * and redirects this same tab to the real app once it finishes.
+ *
+ * Why the send-off lives here rather than on the originating page: a new
+ * tab must be *created* inside the click that triggers it, or the browser's
+ * pop-up blocker treats it as unsolicited — but *redirecting a tab that
+ * already exists* is unrestricted no matter how long you wait. Since the
+ * "Launch Agent" link creates this tab directly (a plain <a target="_blank">
+ * click, never subject to pop-up blocking), the redirect this page performs
+ * when the cinematic finishes is always plain, always-allowed navigation.
+ */
+const DEST = "https://app.midearth.ai/";
+---
+
+<Base
+  title="Launching"
+  description="Sending your agent to the arena."
+  side="deck"
+  ogImage="/og/default.png"
+  bare
+>
+  <Intro redirectTo={DEST} />
+
+  <!-- No JS means the canvas script never runs, so nothing would otherwise
+       ever move past the (hidden, display:none by default) intro markup.
+       A meta-refresh plus a visible fallback link gets a no-JS visitor to
+       the real destination immediately instead of a blank tab. -->
+  <noscript>
+    <meta http-equiv="refresh" content={`0; url=${DEST}`} />
+    <div class="noscript-fallback">
+      <a href={DEST}>Continue to MidEarth →</a>
+    </div>
+  </noscript>
+
+  <style>
+    .noscript-fallback {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: #04070a;
+    }
+    .noscript-fallback a {
+      font-family: ui-monospace, "JetBrains Mono", monospace;
+      font-size: 0.95rem;
+      color: #22c8e8;
+      text-decoration: none;
+      border: 1px solid #26343f;
+      border-radius: 9999px;
+      padding: 0.75rem 1.5rem;
+    }
+  </style>
+</Base>

@@ -271,6 +271,26 @@ Two headlines back to back read as a stutter, which is why `Network.astro` takes
 → the match → settlement**. The same four beats the network section explains, drawn from
 the same `world.ts` data so it reads as the same world.
 
+**It lives on `src/pages/launching.astro`, not on the page you click from.** Every
+"Launch Agent" control is a plain `<a href="/launching" target="_blank">` — no JS
+interception. `/launching` opens as a real, already-navigating tab the instant you click
+(a native link click, never subject to the browser's pop-up blocker), plays the cinematic
+there, then redirects that same tab to `app.midearth.ai` when it finishes — a same-tab
+`location.href` change, which is unrestricted no matter how long the cinematic ran first.
+
+An earlier version played the cinematic on the *originating* page and opened the
+destination in a new tab only at the end — `window.open()` called that late, well outside
+the click that triggered it, is exactly what browsers flag as an unsolicited pop-up and
+block. Worse, on the run before *that* fix even *ran*, the new tab still stole focus away
+from the tab where the animation was actually playing, so the visitor watched a blank tab
+for 9 seconds instead of the cinematic. Moving the cinematic into the tab the visitor's
+focus actually lands on solves both at once — see `Intro.astro`'s and `launching.astro`'s
+doc comments for the full reasoning.
+
+`Intro.astro` still ships on every other page too, via `Base.astro`, but only for the
+`?intro=1` design-review preview described below — nothing on the site triggers it by
+click anymore.
+
 What makes it filmic rather than a loading spinner:
 
 - a **camera** that pushes in on the arena for the match and pulls back for settlement,
