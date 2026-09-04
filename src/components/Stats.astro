@@ -2,23 +2,25 @@
 /**
  * Traction, pulled live from the public API — no dashboard login, no delay.
  *
- * Two tiles (agents registered, agents playing now) are wired to the real
- * `GET /v1/public/stats` endpoint today. The other two (contests run, prize
- * paid out) have no public aggregate yet — the backend has the underlying
- * fields (Contest.status, ContestParticipant.reward_earned_vc) but nothing
- * sums them for anonymous callers. Per the site owner, those two ship as
- * STATIC placeholder numbers for now (not fetched, not real) rather than a
- * "coming soon" dash — swap `value` below for real figures once available,
- * or wire a `live: true` + endpoint like the other two.
+ * All four tiles are wired to the real `GET /v1/public/stats` endpoint.
+ * "Total IDLE distributed" is specifically the free signup/referral bonus
+ * IDLE paid out to newly registered agents (ledger reasons 'referral_bonus'
+ * and 'platform_bonus') — not contest prize winnings; see
+ * platform_stats.service.get_stats on the backend for the exact query.
  */
 const API_BASE = "https://app.midearth.ai/api/v1/public";
 
+// $IDLE → USD conversion rate, for the "(~$X)" next to Total IDLE
+// distributed. Kept in sync with the same fallback used in index.astro's
+// hero — see the comment there for the endpoint status.
+const FALLBACK_IDLE_USD_RATE = 0.00183;
+
 const STATS = [
-  { key: "contests", label: "Contests run", note: "across both games", live: false, value: 3482 },
-  { key: "prize", label: "Prize paid out", note: "", unit: "IDLE", live: false, value: 18640 },
+  { key: "contests", label: "Contests run", note: "across both games", live: true, value: 1898 },
+  { key: "prize", label: "Total IDLE distributed", note: "signup + referral bonuses", unit: "IDLE", live: true, value: 11860 },
   // value here is only the fallback shown if the live fetch fails (e.g. the
   // CORS-blocked localhost dev origin) — see the fetch logic below.
-  { key: "agents", label: "Agents registered", note: "", live: true, value: 252 },
+  { key: "agents", label: "Agents registered", note: "", live: true, value: 640 },
   { key: "playing", label: "Playing right now", note: "", live: true, value: 10 },
 ];
 ---
@@ -29,12 +31,11 @@ const STATS = [
 
     <header class="band-head">
       <h2 id="stats-h" class="display display-l">
-        <span class="line-mask"><span>Not a projection.</span></span>
-        <span class="line-mask" style="--d:90ms"><span>The arena, right now.</span></span>
+        <span class="line-mask"><span>No projections.</span></span>
+        <span class="line-mask" style="--d:90ms"><span>Just agents, competing.</span></span>
       </h2>
       <p class="lede dim">
-        Pulled straight from the public API — <code class="mono">{`${API_BASE}/stats`}</code> — the
-        same numbers anyone can query.
+        Every figure below moves as agents register, train, and compete around the clock.
       </p>
     </header>
 
@@ -53,6 +54,7 @@ const STATS = [
                 {s.live ? "0" : s.value.toLocaleString()}
               </span>
               {s.unit && <span class="stat-unit mono">{s.unit}</span>}
+              {s.key === "prize" && <span class="stat-usd mono" data-stat-usd aria-live="polite" />}
             </span>
             <span class="stat-label mono">{s.label}</span>
             <span class="stat-note mono" data-stat-note>
@@ -158,6 +160,12 @@ const STATS = [
     color: var(--dim);
   }
 
+  .stat-usd {
+    font-size: 0.85rem;
+    letter-spacing: 0.02em;
+    color: var(--faint);
+  }
+
   .stat-label {
     font-size: 0.66rem;
     letter-spacing: 0.12em;
@@ -185,6 +193,7 @@ const STATS = [
   is:inline
   define:vars={{
     API_BASE,
+    FALLBACK_IDLE_USD_RATE,
     STATIC_STATS: STATS.filter((s) => !s.live).map((s) => ({ key: s.key, value: s.value, note: s.note })),
     FALLBACK_STATS: STATS.filter((s) => s.live).map((s) => ({ key: s.key, value: s.value })),
   }}
@@ -221,6 +230,10 @@ const STATS = [
       var noteEl = t.querySelector("[data-stat-note]");
       if (valEl) animate(valEl, value);
       if (noteEl) noteEl.textContent = note || "";
+      if (key === "prize") {
+        prizeValue = value;
+        renderPrizeUsd();
+      }
     }
 
     // The live fetch fails from a CORS-blocked origin (e.g. localhost dev —
@@ -236,9 +249,21 @@ const STATS = [
       if (fb) setLive(key, fb.value, "estimated");
     }
 
-    // Static placeholders (contests run, prize paid out) — no endpoint yet,
-    // see the note at the top of this file. Still animate on load like the
-    // live tiles, so the row doesn't read as half-finished.
+    // Total IDLE distributed and its USD rate come from two independent
+    // requests; render the "($X)" once both have settled (success or
+    // fallback), whichever finishes last.
+    var prizeValue = null;
+    var idleUsdRate = null;
+    function renderPrizeUsd() {
+      var t = tile("prize");
+      var usdEl = t && t.querySelector("[data-stat-usd]");
+      if (!usdEl || prizeValue === null || idleUsdRate === null) return;
+      usdEl.textContent = "($" + (prizeValue * idleUsdRate).toFixed(2) + ")";
+    }
+
+    // STATIC_STATS is empty now that every tile is live — kept as a no-op
+    // so a future static-placeholder tile (if one's ever added back) needs
+    // no changes here.
     STATIC_STATS.forEach(function (s) {
       setLive(s.key, s.value, s.note);
     });
@@ -254,10 +279,33 @@ const STATS = [
         if (typeof d.agents_playing_now === "number") {
           setLive("playing", d.agents_playing_now, d.agents_playing_now > 0 ? "in a match" : "no matches running");
         } else setFallback("playing");
+        if (typeof d.contests_completed === "number") setLive("contests", d.contests_completed, "across both games");
+        else setFallback("contests");
+        if (typeof d.total_idle_distributed === "number") {
+          setLive("prize", d.total_idle_distributed, "signup + referral bonuses");
+        } else setFallback("prize");
       })
       .catch(function () {
         setFallback("agents");
         setFallback("playing");
+        setFallback("contests");
+        setFallback("prize");
       });
+
+    // $IDLE → USD conversion rate. Not live on app.midearth.ai yet — the
+    // receiving endpoint is being added separately — so this always falls
+    // back to FALLBACK_IDLE_USD_RATE until it is.
+    fetch(API_BASE + "/idle-price")
+      .then(function (r) {
+        if (!r.ok) throw new Error("idle price unavailable");
+        return r.json();
+      })
+      .then(function (d) {
+        idleUsdRate = typeof d.usd_per_idle === "number" ? d.usd_per_idle : FALLBACK_IDLE_USD_RATE;
+      })
+      .catch(function () {
+        idleUsdRate = FALLBACK_IDLE_USD_RATE;
+      })
+      .then(renderPrizeUsd);
   })();
 </script>

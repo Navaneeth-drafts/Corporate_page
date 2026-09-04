@@ -63,14 +63,18 @@ import Globe from "./Globe.astro";
             -->
           </ul>
         </div>
+        <!-- "Elsewhere" (X/Discord/GitHub) disabled until real social links
+             exist — a {{TOKEN}} in an href ships as a literal, broken URL.
+             Uncomment and restore the 3-column .cols grid once they're set.
         <div>
           <p class="eyebrow">Elsewhere</p>
           <ul>
-            <li><a class="link" href="{{SOCIAL_X}}">X</a></li>
-            <li><a class="link" href="{{SOCIAL_DISCORD}}">Discord</a></li>
-            <li><a class="link" href="{{SOCIAL_GITHUB}}">GitHub</a></li>
+            <li><a class="link" href="https://x.com/...">X</a></li>
+            <li><a class="link" href="https://discord.gg/...">Discord</a></li>
+            <li><a class="link" href="https://github.com/...">GitHub</a></li>
           </ul>
         </div>
+        -->
       </div>
     </div>
 
@@ -137,7 +141,7 @@ import Globe from "./Globe.astro";
 
   .cols {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 1.5rem;
     align-content: start;
   }

@@ -1,12 +1,12 @@
 ---
 import Base from "../layouts/Base.astro";
 import PageHero from "../components/PageHero.astro";
-import { games } from "../data/games";
+import { games, formatTensorSpec } from "../data/games";
 ---
 
 <Base
   title="Games"
-  description="PushBlock and FoodCollector: real-time physics environments with a locked base architecture, 10-agent and 100-agent pools, and rank-based payouts."
+  description="PushBlock and FoodCollector: real-time physics environments with a locked base architecture, live pool capacity, and rank-based payouts."
   side="stands"
   ogImage="/og/games.png"
 >
@@ -60,26 +60,24 @@ import { games } from "../data/games";
                   <div>
                     <h3 class="sub">Match</h3>
                     <dl class="kv">
-                      <div><dt>Length</dt><dd>{g.seconds}s</dd></div>
+                      <div><dt>Length</dt><dd><span data-secs={g.slug}>{g.seconds}</span>s</dd></div>
                       <div><dt>Ranked by</dt><dd>final score</dd></div>
                       <div><dt>Ties</dt><dd>earlier scoring tick</dd></div>
                     </dl>
                   </div>
                   <div>
-                    <h3 class="sub">Pools</h3>
+                    <h3 class="sub">Pool</h3>
                     <dl class="kv">
-                      {g.tiers.map((t) => (
-                        <div><dt>{t}</dt><dd>{"{{ENTRY_FEE}}"} IDLE</dd></div>
-                      ))}
+                      <div><dt>Capacity</dt><dd><span data-capacity={g.slug}>{g.maxAgents}</span> agents</dd></div>
+                      <div><dt>Entry fee</dt><dd><span data-fee={g.slug}>{g.entryFee}</span> IDLE</dd></div>
                       <div><dt>Opens</dt><dd>on a recurring schedule</dd></div>
                     </dl>
                   </div>
                   <div>
                     <h3 class="sub">Locked base model</h3>
                     <dl class="kv">
-                      <div><dt>Arch</dt><dd>{g.arch}</dd></div>
-                      <div><dt>Obs dim</dt><dd>{g.obsDim}</dd></div>
-                      <div><dt>Act dim</dt><dd>{g.actDim}</dd></div>
+                      <div><dt>Input</dt><dd data-onnx-in={g.slug}>{formatTensorSpec(g.onnxInput)}</dd></div>
+                      <div><dt>Output</dt><dd data-onnx-out={g.slug}>{formatTensorSpec(g.onnxOutput)}</dd></div>
                       <div><dt>Format</dt><dd>ONNX</dd></div>
                     </dl>
                   </div>
@@ -101,7 +99,7 @@ import { games } from "../data/games";
           <p class="dim">
             Every game publishes one base ONNX architecture. You fine-tune it and upload your
             weights, and the platform checks the shape matches exactly before you can enter a
-            pool. An upload that does not match is rejected with a 422, not quietly resized.
+            pool. An upload that does not match is rejected with a 400, not quietly resized.
           </p>
           <p class="dim">
             The effect: a pool measures how well you trained, not how much model you could
@@ -109,11 +107,10 @@ import { games } from "../data/games";
             weights.
           </p>
         </div>
-        <pre class="code" aria-label="Model verification"><span class="verb">POST</span> <span class="path">/v1/agents/model</span>
-<span class="cmt">→ 202  shape verified, eligible to enter</span>
-<span class="cmt">→ 422  shape mismatch</span>
-<span class="cmt">   expected: {"{{BASE_SHAPE}}"}</span>
-<span class="cmt">   received: {"{{UPLOAD_SHAPE}}"}</span></pre>
+        <pre class="code" aria-label="Model verification"><span class="verb">POST</span> <span class="path">/api/v1/gateway/upload-model</span>
+<span class="cmt">→ 201  shape verified, eligible to enter</span>
+<span class="cmt">→ 400  shape mismatch, upload rejected</span>
+<span class="cmt">   e.g. PushBlock expects {formatTensorSpec(games[0].onnxInput)} → {formatTensorSpec(games[0].onnxOutput)}</span></pre>
       </div>
     </div>
   </section>
@@ -223,4 +220,46 @@ import { games } from "../data/games";
       }
     }
   </style>
+
+  <script is:inline>
+    // Length, capacity, entry fee and ONNX shape are admin-configurable per
+    // game and drift — the values rendered above are only the pre-fetch
+    // fallback.
+    (function () {
+      function formatSpec(spec) {
+        if (!spec || typeof spec !== "object") return null;
+        return Object.keys(spec)
+          .map(function (name) {
+            return name + ": [" + spec[name].join(", ") + "]";
+          })
+          .join(", ");
+      }
+
+      fetch("https://app.midearth.ai/api/v1/games")
+        .then(function (r) {
+          if (!r.ok) throw new Error("games unavailable");
+          return r.json();
+        })
+        .then(function (games) {
+          games.forEach(function (g) {
+            var secs = document.querySelector('[data-secs="' + g.slug + '"]');
+            var cap = document.querySelector('[data-capacity="' + g.slug + '"]');
+            var fee = document.querySelector('[data-fee="' + g.slug + '"]');
+            var onnxIn = document.querySelector('[data-onnx-in="' + g.slug + '"]');
+            var onnxOut = document.querySelector('[data-onnx-out="' + g.slug + '"]');
+            if (secs && typeof g.match_duration_secs === "number") secs.textContent = g.match_duration_secs;
+            if (cap && typeof g.max_agents === "number") cap.textContent = g.max_agents.toLocaleString();
+            if (fee && typeof g.entry_fee_vc === "number") fee.textContent = g.entry_fee_vc;
+            var inSpec = formatSpec(g.onnx_input_spec);
+            var outSpec = formatSpec(g.onnx_output_spec);
+            if (onnxIn && inSpec) onnxIn.textContent = inSpec;
+            if (onnxOut && outSpec) onnxOut.textContent = outSpec;
+          });
+        })
+        .catch(function () {
+          // Live fetch failed (e.g. CORS-blocked dev origin) — the
+          // fallback values already rendered stay as-is.
+        });
+    })();
+  </script>
 </Base>

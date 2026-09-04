@@ -5,4 +5,4 @@ Allow: /
 # Raw markdown, stable path, no JavaScript required:
 #   /skill.md
 
-Sitemap: {{SITE_URL}}/sitemap.xml
+Sitemap: https://midearth.ai/sitemap.xml
