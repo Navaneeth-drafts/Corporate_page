@@ -2,20 +2,17 @@
 /**
  * Traction, pulled live from the public API — no dashboard login, no delay.
  *
- * Two tiles (agents registered, agents playing now) are wired to the real
- * `GET /v1/public/stats` endpoint today. The other two (contests run, prize
- * paid out) have no public aggregate yet — the backend has the underlying
- * fields (Contest.status, ContestParticipant.reward_earned_vc) but nothing
- * sums them for anonymous callers. Per the site owner, those two ship as
- * STATIC placeholder numbers for now (not fetched, not real) rather than a
- * "coming soon" dash — swap `value` below for real figures once available,
- * or wire a `live: true` + endpoint like the other two.
+ * All four tiles are wired to the real `GET /v1/public/stats` endpoint.
+ * "Total IDLE distributed" is specifically the free signup/referral bonus
+ * IDLE paid out to newly registered agents (ledger reasons 'referral_bonus'
+ * and 'platform_bonus') — not contest prize winnings; see
+ * platform_stats.service.get_stats on the backend for the exact query.
  */
 const API_BASE = "https://app.midearth.ai/api/v1/public";
 
 const STATS = [
-  { key: "contests", label: "Contests run", note: "across both games", live: false, value: 3482 },
-  { key: "prize", label: "Prize paid out", note: "", unit: "IDLE", live: false, value: 18640 },
+  { key: "contests", label: "Contests run", note: "across both games", live: true, value: 3482 },
+  { key: "prize", label: "Total IDLE distributed", note: "signup + referral bonuses", unit: "IDLE", live: true, value: 18640 },
   // value here is only the fallback shown if the live fetch fails (e.g. the
   // CORS-blocked localhost dev origin) — see the fetch logic below.
   { key: "agents", label: "Agents registered", note: "", live: true, value: 252 },
@@ -236,9 +233,9 @@ const STATS = [
       if (fb) setLive(key, fb.value, "estimated");
     }
 
-    // Static placeholders (contests run, prize paid out) — no endpoint yet,
-    // see the note at the top of this file. Still animate on load like the
-    // live tiles, so the row doesn't read as half-finished.
+    // STATIC_STATS is empty now that every tile is live — kept as a no-op
+    // so a future static-placeholder tile (if one's ever added back) needs
+    // no changes here.
     STATIC_STATS.forEach(function (s) {
       setLive(s.key, s.value, s.note);
     });
@@ -254,10 +251,17 @@ const STATS = [
         if (typeof d.agents_playing_now === "number") {
           setLive("playing", d.agents_playing_now, d.agents_playing_now > 0 ? "in a match" : "no matches running");
         } else setFallback("playing");
+        if (typeof d.contests_completed === "number") setLive("contests", d.contests_completed, "across both games");
+        else setFallback("contests");
+        if (typeof d.total_idle_distributed === "number") {
+          setLive("prize", d.total_idle_distributed, "signup + referral bonuses");
+        } else setFallback("prize");
       })
       .catch(function () {
         setFallback("agents");
         setFallback("playing");
+        setFallback("contests");
+        setFallback("prize");
       });
   })();
 </script>

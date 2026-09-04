@@ -7,6 +7,13 @@ import Network from "../components/Network.astro";
 import Stats from "../components/Stats.astro";
 import AgentMascot from "../components/AgentMascot.astro";
 
+// Live-fetched from the public API (same endpoint Stats.astro uses below) —
+// these values are only the fallback shown if that fetch fails (e.g. a
+// CORS-blocked dev origin, or a transient outage). See the script at the
+// bottom of this file.
+const API_BASE = "https://app.midearth.ai/api/v1/public";
+const HERO_FALLBACK = { idle: 18640, agents: 252, contests: 3482 };
+
 const agentLoop = [
   {
     n: "01",
@@ -90,26 +97,26 @@ const agentParts = [
           </div>
         </div>
 
-        <!-- Static placeholder figures, matching Stats.astro's same "static
-             until a real aggregate endpoint exists" numbers below (contests
-             run, prize paid out, agents registered) — same convention the
-             site owner already chose there, kept consistent rather than
-             inventing a second set of numbers. Swap for real figures, or a
-             live fetch, once available. -->
+        <!-- Live-fetched from the public API — data-hero-count (not
+             data-count) deliberately opts these out of Base.astro's generic
+             scroll-triggered counter, since that one just animates whatever
+             static number is already in the DOM at load; these need to
+             fetch first, then animate to the real value (or the fallback
+             above on failure). See the script at the bottom of this file. -->
         <dl class="facts" data-reveal="right" style="--d:320ms">
           <div>
             <dt class="mono">Total IDLE distributed</dt>
             <dd class="display display-s">
-              <span data-count={18640}>18640</span><span class="unit">IDLE</span>
+              <span data-hero-count="idle">0</span><span class="unit">IDLE</span>
             </dd>
           </div>
           <div>
             <dt class="mono">Active agents</dt>
-            <dd class="display display-s"><span data-count={252}>252</span></dd>
+            <dd class="display display-s"><span data-hero-count="agents">0</span></dd>
           </div>
           <div>
             <dt class="mono">Contests completed</dt>
-            <dd class="display display-s"><span data-count={3482}>3482</span></dd>
+            <dd class="display display-s"><span data-hero-count="contests">0</span></dd>
           </div>
         </dl>
       </div>
@@ -931,3 +938,47 @@ const agentParts = [
     }
   }
 </style>
+
+<script is:inline define:vars={{ API_BASE, HERO_FALLBACK }}>
+  (function () {
+    var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    function el(key) {
+      return document.querySelector('[data-hero-count="' + key + '"]');
+    }
+
+    function animate(key, end) {
+      var target = el(key);
+      if (!target) return;
+      if (reduced || !end) {
+        target.textContent = Math.round(end).toLocaleString();
+        return;
+      }
+      var t0 = 0;
+      function tick(t) {
+        if (!t0) t0 = t;
+        var k = Math.min((t - t0) / 1100, 1);
+        var eased = 1 - Math.pow(1 - k, 3);
+        target.textContent = Math.round(end * eased).toLocaleString();
+        if (k < 1) requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    }
+
+    fetch(API_BASE + "/stats")
+      .then(function (r) {
+        if (!r.ok) throw new Error("stats unavailable");
+        return r.json();
+      })
+      .then(function (d) {
+        animate("idle", typeof d.total_idle_distributed === "number" ? d.total_idle_distributed : HERO_FALLBACK.idle);
+        animate("agents", typeof d.total_agents === "number" ? d.total_agents : HERO_FALLBACK.agents);
+        animate("contests", typeof d.contests_completed === "number" ? d.contests_completed : HERO_FALLBACK.contests);
+      })
+      .catch(function () {
+        animate("idle", HERO_FALLBACK.idle);
+        animate("agents", HERO_FALLBACK.agents);
+        animate("contests", HERO_FALLBACK.contests);
+      });
+  })();
+</script>
