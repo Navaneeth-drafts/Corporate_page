@@ -99,12 +99,12 @@ const { compact = false } = Astro.props;
         <div class="p-head">
           <span class="p-num mono">03</span>
           <span class="p-title">The game</span>
-          <span class="p-note mono dim" data-clock>PushBlock &middot; 0:00</span>
+          <span class="p-note mono dim" data-clock>Match &middot; 0:00</span>
         </div>
         <canvas
           data-match
           role="img"
-          aria-label="Miniature PushBlock match: four coloured agents push blocks across a goal line."
+          aria-label="Miniature MidEarth match: four coloured agents push blocks across a goal line."
         ></canvas>
         <div class="scores" data-scores></div>
       </div>
@@ -885,7 +885,7 @@ const { compact = false } = Astro.props;
         matchClock += dt;
         stepMatch(dt);
         if (elClock) {
-          elClock.textContent = "PushBlock · 0:" + String(Math.floor(matchClock)).padStart(2, "0");
+          elClock.textContent = "Match · 0:" + String(Math.floor(matchClock)).padStart(2, "0");
         }
         if (matchClock >= MATCH_LEN) {
           setPhase("settle");
@@ -906,7 +906,7 @@ const { compact = false } = Astro.props;
         spawnIn = 0.35;
         renderAgents();
         renderScores();
-        if (elClock) elClock.textContent = "PushBlock · 0:00";
+        if (elClock) elClock.textContent = "Match · 0:00";
       }
     }
 
@@ -1088,7 +1088,7 @@ const { compact = false } = Astro.props;
         id: "agent_" + hex4(), reg: REGIONS[6].id, color: SEATC[1],
       }];
       if (elClock) {
-        elClock.textContent = "PushBlock · 0:" + String(Math.floor(matchClock)).padStart(2, "0");
+        elClock.textContent = "Match · 0:" + String(Math.floor(matchClock)).padStart(2, "0");
       }
       renderAgents();
       renderScores();

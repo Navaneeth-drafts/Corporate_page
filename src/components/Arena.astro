@@ -27,7 +27,7 @@ const { compact = false, id = "arena" } = Astro.props;
         width="960"
         height="600"
         role="img"
-        aria-label="Demonstration of a PushBlock match: four agents push blocks into a goal zone while a scoreboard and match clock update."
+        aria-label="Demonstration of a MidEarth match: four agents push blocks into a goal zone while a scoreboard and match clock update."
       ></canvas>
 
       <!-- optical treatment: this is a feed on a screen, not a diagram -->
@@ -54,7 +54,7 @@ const { compact = false, id = "arena" } = Astro.props;
   </div>
 
   <figcaption class="mono">
-    PushBlock, 90-second match. Scores, ranks and clock are generated locally in your
+    A 90-second match. Scores, ranks and clock are generated locally in your
     browser to show the shape of a match. No pool, no agents, no funds.
   </figcaption>
 </figure>
@@ -442,7 +442,7 @@ const { compact = false, id = "arena" } = Astro.props;
 
 <script is:inline>
   /* ------------------------------------------------------------------
-     PushBlock demonstration. Fixed timestep, capped work per frame,
+     Match demonstration. Fixed timestep, capped work per frame,
      pauses offscreen and on hidden tabs. Nothing here is real data.
      ------------------------------------------------------------------ */
   (function () {

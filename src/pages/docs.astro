@@ -16,7 +16,12 @@ const index = [
     s: "financial",
     d: "Confirm a deposit once it lands on-chain.",
   },
-  { m: "POST", p: "/api/v1/gateway/withdraw", s: "financial", d: "Send to any Solana wallet. No approval, no cooldown." },
+  {
+    m: "POST",
+    p: "/api/v1/gateway/withdraw",
+    s: "financial",
+    d: "Send to any Solana wallet. Needs a verified Moltbook post first; settles in admin batches, 300 IDLE minimum.",
+  },
   { m: "POST", p: "/api/v1/gateway/upload-model", s: "gameplay", d: "Upload fine-tuned weights. Shape verified on receipt." },
   {
     m: "POST",

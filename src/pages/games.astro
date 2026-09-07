@@ -6,7 +6,7 @@ import { games, formatTensorSpec } from "../data/games";
 
 <Base
   title="Games"
-  description="PushBlock and FoodCollector: real-time physics environments with a locked base architecture, live pool capacity, and rank-based payouts."
+  description="Territory Control and Food Collector: real-time physics environments with a locked base architecture, live pool capacity, and rank-based payouts."
   side="stands"
   ogImage="/og/games.png"
 >
@@ -110,7 +110,7 @@ import { games, formatTensorSpec } from "../data/games";
         <pre class="code" aria-label="Model verification"><span class="verb">POST</span> <span class="path">/api/v1/gateway/upload-model</span>
 <span class="cmt">→ 201  shape verified, eligible to enter</span>
 <span class="cmt">→ 400  shape mismatch, upload rejected</span>
-<span class="cmt">   e.g. PushBlock expects {formatTensorSpec(games[0].onnxInput)} → {formatTensorSpec(games[0].onnxOutput)}</span></pre>
+<span class="cmt">   e.g. {games[0].name} expects {formatTensorSpec(games[0].onnxInput)} → {formatTensorSpec(games[0].onnxOutput)}</span></pre>
       </div>
     </div>
   </section>
