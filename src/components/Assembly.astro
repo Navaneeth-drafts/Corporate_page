@@ -1,0 +1,185 @@
+---
+import AgentAssembly from "../react/AgentAssembly.jsx";
+
+/**
+ * The MidEarth mark, built from a field of luminous particles that
+ * settle into shape (see src/react/AgentAssemblyScene.jsx). It is the
+ * very first thing on the page — above the hero — so it starts already
+ * mostly assembled (there's no filler section above it to scroll down
+ * through, unlike the standalone demo it was adapted from) and scatters
+ * apart as the visitor scrolls it out of view into the hero below.
+ *
+ * client:load, not client:visible — this section is above the fold, so
+ * it should be there (not a placeholder) the moment the page can paint.
+ */
+---
+
+<section class="ground-void assembly-section" aria-label="The MidEarth mark">
+  <div class="wrap-wide assembly-frame">
+    <span class="assembly-word assembly-word-left display display-xxl" data-magnetic>Mid</span>
+
+    <div class="assembly-mount">
+      <AgentAssembly client:load />
+      <noscript>
+        <div class="assembly-fallback">
+          <img src="/logo-assembly-source.png" alt="MidEarth" width="220" height="200" />
+        </div>
+      </noscript>
+    </div>
+
+    <span class="assembly-word assembly-word-right display display-xxl" data-magnetic>Earth</span>
+    <p class="assembly-caption mono dim" data-magnetic>Alpha</p>
+  </div>
+</section>
+
+<style>
+  .assembly-section {
+    position: relative;
+    overflow: hidden;
+  }
+  .assembly-frame {
+    position: relative;
+  }
+  .assembly-mount {
+    width: 100%;
+    height: 100svh;
+    max-height: 56rem;
+  }
+  .assembly-mount :global(.assembly),
+  .assembly-mount :global(.ambly-canvas) {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+  .assembly-mount :global(canvas) {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+  }
+  .assembly-fallback {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+  }
+  .assembly-fallback img {
+    width: auto;
+    height: 60%;
+    max-width: 80%;
+  }
+
+  .assembly-word {
+    position: absolute;
+    top: 50%;
+    margin: 0;
+    line-height: 1;
+    pointer-events: none;
+    z-index: 2;
+    /* magnetic hover drift, see the script below */
+    transform: translateY(-50%) translate3d(var(--mx, 0px), var(--my, 0px), 0);
+  }
+  .assembly-word-left {
+    left: clamp(1rem, 4vw, 3rem);
+  }
+  .assembly-word-right {
+    right: clamp(1rem, 4vw, 3rem);
+    text-align: right;
+  }
+  .assembly-caption {
+    position: absolute;
+    left: 50%;
+    bottom: clamp(1rem, 4vw, 2.5rem);
+    margin: 0;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    pointer-events: none;
+    z-index: 2;
+    transform: translateX(-50%) translate3d(var(--mx, 0px), var(--my, 0px), 0);
+  }
+
+  @media (max-width: 720px) {
+    .assembly-word {
+      position: static;
+      transform: none;
+      display: block;
+      text-align: center;
+    }
+    .assembly-word-right {
+      text-align: center;
+    }
+    .assembly-caption {
+      position: static;
+      transform: none;
+      margin-top: 0.75rem;
+      text-align: center;
+    }
+  }
+</style>
+
+<script>
+  /* Magnetic hover, cinnamon.co.uk "IMAGINE"-style: each [data-magnetic]
+     element drifts toward the cursor within a soft falloff radius and
+     eases back to rest once the cursor moves away. Ports the effect
+     from the standalone animation demo's App.jsx (there it ran as a
+     React hook over refs; here it's the same per-frame decay-lerp over
+     a plain querySelectorAll, matching how the rest of this site's
+     progressive-enhancement motion runs — see Base.astro). Off entirely
+     under reduced motion or on touch-only devices, where there's no
+     hover to react to. */
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const canHover = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+
+  if (!reduced && canHover) {
+    const RADIUS = 240; // px — how far from an element's center the pull reaches
+    const STRENGTH = 0.35;
+
+    const state = Array.from(document.querySelectorAll("[data-magnetic]")).map((el) => ({
+      el,
+      tx: 0,
+      ty: 0,
+      targetX: 0,
+      targetY: 0,
+    }));
+
+    if (state.length) {
+      const handleMove = (e: PointerEvent) => {
+        state.forEach((s) => {
+          const rect = s.el.getBoundingClientRect();
+          const dx = e.clientX - (rect.left + rect.width / 2);
+          const dy = e.clientY - (rect.top + rect.height / 2);
+          const dist = Math.hypot(dx, dy);
+          if (dist < RADIUS) {
+            const falloff = 1 - dist / RADIUS;
+            s.targetX = dx * STRENGTH * falloff;
+            s.targetY = dy * STRENGTH * falloff;
+          } else {
+            s.targetX = 0;
+            s.targetY = 0;
+          }
+        });
+      };
+      const handleLeave = () => {
+        state.forEach((s) => {
+          s.targetX = 0;
+          s.targetY = 0;
+        });
+      };
+      window.addEventListener("pointermove", handleMove);
+      window.addEventListener("pointerleave", handleLeave);
+
+      let last = performance.now();
+      function tick(now: number) {
+        const dt = Math.min((now - last) / 1000, 0.05);
+        last = now;
+        state.forEach((s) => {
+          s.tx += (s.targetX - s.tx) * Math.min(dt * 6, 1);
+          s.ty += (s.targetY - s.ty) * Math.min(dt * 6, 1);
+          s.el.style.setProperty("--mx", `${s.tx.toFixed(2)}px`);
+          s.el.style.setProperty("--my", `${s.ty.toFixed(2)}px`);
+        });
+        requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    }
+  }
+</script>

@@ -1,5 +1,6 @@
 ---
 import Base from "../layouts/Base.astro";
+import Assembly from "../components/Assembly.astro";
 import Doors from "../components/Doors.astro";
 import Atmos from "../components/Atmos.astro";
 import Globe from "../components/Globe.astro";
@@ -75,6 +76,10 @@ const agentParts = [
   side="seam"
   ogImage="/og/home.png"
 >
+  <!-- ============================================================ assembly
+       The MidEarth mark, always the first thing on the page. -->
+  <Assembly />
+
   <!-- ================================================================ hero -->
   <section class="hero ground-void has-atmos">
     <Atmos horizon={true} beam={true} />
