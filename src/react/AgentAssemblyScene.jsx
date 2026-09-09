@@ -14,7 +14,7 @@ import * as THREE from "three";
  * way. Purely a function of scroll position either direction.
  */
 
-const PARTICLE_COUNT = 24000; // denser fill so the shape reads solid against a light ground too, same source colours
+const PARTICLE_COUNT = 32000; // denser still — the light-theme ground was reading too washed-out at 24k, same source colours
 const MARK_SCALE = 4.6; // baked into sampleLogo's positions below
 const MARK_HALF_WIDTH = MARK_SCALE / 2;
 
