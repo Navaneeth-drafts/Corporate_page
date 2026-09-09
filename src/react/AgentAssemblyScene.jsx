@@ -44,44 +44,18 @@ function easeInOutCubic(t) {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
-/** Sample the mark's own alpha AND colour into a fine, evenly-spread
- * point cloud — a coarse grid over the shape's bounding box, one
- * candidate pixel per cell, so the dust fills the silhouette instead of
- * clumping. Each particle keeps the exact colour of the source pixel it
- * was sampled from, so the assembled cloud reproduces the mark's real
- * blue-to-green gradient in place, not a randomised mix. The two
- * near-white eye ovals are excluded from candidates entirely, so no
- * particle ever lands there — they read as empty gaps in the dust, same
- * as the mascot's eyes being plain holes in the shape. Sampled from a
- * high-resolution offscreen copy of the source art so a dense particle
- * count still finds a distinct pixel per particle instead of repeating. */
-function sampleLogo(img, count) {
-  const size = 480;
-  const canvas = document.createElement("canvas");
-  canvas.width = size;
-  canvas.height = size;
-  const ctx = canvas.getContext("2d");
-  ctx.drawImage(img, 0, 0, size, size);
-  const data = ctx.getImageData(0, 0, size, size).data;
-
-  const candidates = [];
-  let minX = size, maxX = 0, minY = size, maxY = 0;
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) {
-      const i = (y * size + x) * 4;
-      const a = data[i + 3];
-      if (a <= 100) continue;
-      const r = data[i], g = data[i + 1], b = data[i + 2];
-      const isEye = r > 205 && g > 205 && b > 205; // near-white eye ovals
-      if (isEye) continue;
-      candidates.push({ x, y, r, g, b });
-      if (x < minX) minX = x;
-      if (x > maxX) maxX = x;
-      if (y < minY) minY = y;
-      if (y > maxY) maxY = y;
-    }
-  }
-  if (!candidates.length) return null;
+/** Bucket-fill selection: a coarse grid over the candidates' own bounding
+ * box, one candidate picked per cell, so a fixed-size sample fills the
+ * silhouette evenly instead of clumping wherever pixels happen to be
+ * dense. */
+function bucketPick(candidates, count) {
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  candidates.forEach((c) => {
+    if (c.x < minX) minX = c.x;
+    if (c.x > maxX) maxX = c.x;
+    if (c.y < minY) minY = c.y;
+    if (c.y > maxY) maxY = c.y;
+  });
 
   const cols = Math.ceil(Math.sqrt(count * ((maxX - minX) / Math.max(1, maxY - minY))));
   const rows = Math.ceil(count / cols);
@@ -105,20 +79,138 @@ function sampleLogo(img, count) {
     [picked[i], picked[j]] = [picked[j], picked[i]];
   }
   while (picked.length < count) picked.push(candidates[Math.floor(Math.random() * candidates.length)]);
+  return picked.slice(0, count);
+}
 
-  const scale = MARK_SCALE;
-  const aspect = (maxY - minY) / (maxX - minX);
-  const positions = new Float32Array(count * 3);
-  const colors = new Float32Array(count * 3);
-  picked.slice(0, count).forEach((c, i) => {
-    positions[i * 3] = ((c.x - minX) / (maxX - minX) - 0.5) * scale;
-    positions[i * 3 + 1] = (0.5 - (c.y - minY) / (maxY - minY)) * scale * aspect;
-    positions[i * 3 + 2] = (Math.random() - 0.5) * 0.12;
+/** Map a sampled pixel to its local scene position, using the FULL
+ * shape's bounding box (never the eye ovals' own, much smaller box) —
+ * that shared frame is what makes computeEyeMasks' circles line up with
+ * where the eyes actually are on the mark, instead of being rescaled to
+ * fill the whole cloud's extent. */
+function pixelToPosition(c, bounds) {
+  const { minX, maxX, minY, maxY, scale, aspect } = bounds;
+  return [
+    ((c.x - minX) / (maxX - minX) - 0.5) * scale,
+    (0.5 - (c.y - minY) / (maxY - minY)) * scale * aspect,
+    (Math.random() - 0.5) * 0.12,
+  ];
+}
+
+function buildPositionsAndColors(picked, bounds) {
+  const positions = new Float32Array(picked.length * 3);
+  const colors = new Float32Array(picked.length * 3);
+  picked.forEach((c, i) => {
+    const [x, y, z] = pixelToPosition(c, bounds);
+    positions[i * 3] = x;
+    positions[i * 3 + 1] = y;
+    positions[i * 3 + 2] = z;
     colors[i * 3] = c.r / 255;
     colors[i * 3 + 1] = c.g / 255;
     colors[i * 3 + 2] = c.b / 255;
   });
   return { positions, colors };
+}
+
+// How much bigger than the eye's own silhouette its push-mask is — just
+// enough padding to reach real bordering dust, not so much that the mask
+// reads as bigger/rounder than the actual eye (a circular mask sized to
+// an oval's longest axis bulges out along its short axis; the ellipse
+// fit below avoids that, but a little slack still helps against sampling
+// jitter at the true silhouette's edge).
+const EYE_MASK_PAD = 1.05;
+
+/** Never turned into particles — just measured. Two clusters (left/right
+ * eye), split on which side of the eye pixels' own mean x they fall on,
+ * each collapsed to a local-space centre + an ELLIPSE (separate x/y
+ * half-extents, not one circular radius) matching the true oval's own
+ * aspect ratio — a single circumscribing radius would have to cover the
+ * shape's longest axis and so bulge out along its shorter one, reading
+ * as rounder than the real eye. This is what lets the body dust treat
+ * "the eye" as a small region it can push particles out of at render
+ * time (see DustLayer's eyeMasks/eyeBounceRef), instead of a shape baked
+ * once into which pixels became particle targets. */
+function computeEyeMasks(eyeCandidates, bounds) {
+  if (!eyeCandidates.length) return [];
+  const pts = eyeCandidates.map((c) => {
+    const [x, y] = pixelToPosition(c, bounds);
+    return { x, y };
+  });
+  const meanX = pts.reduce((s, p) => s + p.x, 0) / pts.length;
+  const groups = [pts.filter((p) => p.x <= meanX), pts.filter((p) => p.x > meanX)].filter(
+    (g) => g.length
+  );
+  return groups.map((group) => {
+    const cx = group.reduce((s, p) => s + p.x, 0) / group.length;
+    const cy = group.reduce((s, p) => s + p.y, 0) / group.length;
+    let rx = 0, ry = 0;
+    group.forEach((p) => {
+      const ax = Math.abs(p.x - cx);
+      const ay = Math.abs(p.y - cy);
+      if (ax > rx) rx = ax;
+      if (ay > ry) ry = ay;
+    });
+    return { x: cx, y: cy, rx: rx * EYE_MASK_PAD, ry: ry * EYE_MASK_PAD };
+  });
+}
+
+/** Sample the mark's own alpha AND colour into a fine, evenly-spread
+ * point cloud. Each particle keeps the exact colour of the source pixel
+ * it was sampled from, so the assembled cloud reproduces the mark's real
+ * blue-to-green gradient in place, not a randomised mix. The two
+ * near-white eye pixels are excluded from the body candidates entirely,
+ * so no body particle ever lands there — they read as empty gaps, same
+ * as the mascot's eyes being plain holes in the shape — but rather than
+ * being discarded outright, they're reduced to a centre + radius per eye
+ * (computeEyeMasks) so the body dust can push nearby particles out of a
+ * small moving circle there at render time (see DustLayer's eyeMasks
+ * prop), instead of the gap being permanently fixed in place. Sampled
+ * from a high-resolution offscreen copy of the source art so a dense
+ * particle count still finds a distinct pixel per particle instead of
+ * repeating. */
+function sampleLogo(img, count) {
+  const size = 480;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(img, 0, 0, size, size);
+  const data = ctx.getImageData(0, 0, size, size).data;
+
+  const candidates = [];
+  const eyeCandidates = [];
+  let minX = size, maxX = 0, minY = size, maxY = 0;
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const i = (y * size + x) * 4;
+      const a = data[i + 3];
+      if (a <= 100) continue;
+      const r = data[i], g = data[i + 1], b = data[i + 2];
+      const isEye = r > 205 && g > 205 && b > 205; // near-white eye ovals
+      if (isEye) {
+        eyeCandidates.push({ x, y, r, g, b });
+        continue;
+      }
+      candidates.push({ x, y, r, g, b });
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
+  }
+  if (!candidates.length) return null;
+
+  // The shape's own bounding box — shared by the body and the eyes so
+  // both map into the same coordinate frame (see pixelToPosition above).
+  const bounds = {
+    minX, maxX, minY, maxY,
+    scale: MARK_SCALE,
+    aspect: (maxY - minY) / (maxX - minX),
+  };
+
+  const { positions, colors } = buildPositionsAndColors(bucketPick(candidates, count), bounds);
+  const eyeMasks = computeEyeMasks(eyeCandidates, bounds);
+
+  return { positions, colors, eyeMasks };
 }
 
 /** A wide, flat drift of dust spanning the full section left-to-right —
@@ -161,13 +253,41 @@ function makeGlowTexture() {
 const CURSOR_FIELD_RADIUS = 0.85;
 const CURSOR_FIELD_SWIRL = 1.4; // max rotation, in radians, right at the cursor
 
+// The eyes' one-time "juggle" on load: a couple of quick up-down wobbles
+// that decay to nothing within ~1.5-2s. This is the Y-offset applied to
+// each eye mask's centre (see computeEyeMasks/DustLayer), not a property
+// of any particle — the "juggle" is the hole moving, not its contents.
+// BOUNCE_READY gates when the clock starts — see Scene's bounce timer for
+// why it isn't simply "on mount" (the assembly section sits right below
+// the sticky nav with no filler above it, so `eased` is still ramping up
+// from 0 for the first few hundred ms after mount; starting the decay
+// then would burn most of the wobble's amplitude before `eased` ever
+// lets it show).
+const BOUNCE_READY = 0.8; // eased-progress threshold that starts the bounce clock
+const BOUNCE_FREQUENCY = 16; // rad/s
+const BOUNCE_AMPLITUDE = 0.36; // local-space units — bigger than an eye's own radius
+const BOUNCE_DECAY = 2.1; // exponential decay rate
+
 /** One size-tier's worth of the shared cloud. Reads the already-eased,
  * already-smoothed progress computed once by the parent Scene each
  * frame, so every tier stays in perfect lockstep with no drift. Also
  * reads the parent's cursor field (local-space position + intensity) so
  * only particles within CURSOR_FIELD_RADIUS of the cursor swirl around
- * it — everywhere else in the mark stays put. */
-function DustLayer({ scatter, target, colors, size, glowTex, reduced, progressRef, cursorFieldRef }) {
+ * it — everywhere else in the mark stays put.
+ *
+ * `eyeMasks` is what makes the eyes "juggle" without a single particle
+ * ever being drawn there: `eyeMasks.masks` are small circles (see
+ * computeEyeMasks) that any particle landing inside gets radially pushed
+ * out of, to the circle's own edge — same displace-don't-hide trick as
+ * the cursor swirl above, just push-to-edge instead of rotate.
+ * `eyeMasks.bounceRef` (computed once per frame in Scene, shared across
+ * every tier so they all push in lockstep) offsets each mask's Y centre
+ * by the one-time on-load wobble — at rest it's 0 and the mask sits
+ * exactly over the gap that would exist anyway, so this reproduces
+ * today's static hole; while it's live, the mask sweeps up and down and
+ * temporarily displaces whichever real, still-coloured dust currently
+ * borders it, which reads as the void itself wobbling. */
+function DustLayer({ scatter, target, colors, size, glowTex, reduced, progressRef, cursorFieldRef, eyeMasks }) {
   const pointsRef = useRef(null);
   const positionsRef = useRef(scatter.slice());
 
@@ -186,10 +306,35 @@ function DustLayer({ scatter, target, colors, size, glowTex, reduced, progressRe
     const pos = geom.geometry.attributes.position.array;
     const field = cursorFieldRef.current;
     const fieldStrength = field.active * eased;
+    const masks = eyeMasks ? eyeMasks.masks : null;
+    const bounceY = eyeMasks ? eyeMasks.bounceRef.current : 0;
+
     for (let i = 0; i < pos.length; i += 3) {
-      const bx = scatter[i] + (target[i] - scatter[i]) * eased;
-      const by = scatter[i + 1] + (target[i + 1] - scatter[i + 1]) * eased;
+      let bx = scatter[i] + (target[i] - scatter[i]) * eased;
+      let by = scatter[i + 1] + (target[i + 1] - scatter[i + 1]) * eased;
       pos[i + 2] = scatter[i + 2] + (target[i + 2] - scatter[i + 2]) * eased;
+
+      if (masks && masks.length) {
+        for (let m = 0; m < masks.length; m++) {
+          const mask = masks[m];
+          const mx = mask.x;
+          const my = mask.y + bounceY;
+          const dx = bx - mx;
+          const dy = by - my;
+          // Normalised elliptical distance (1.0 == exactly on the eye's
+          // own edge) rather than a circular one, so the push-out follows
+          // the real oval's aspect ratio instead of its longest axis.
+          const nx = dx / mask.rx;
+          const ny = dy / mask.ry;
+          const ndist = Math.sqrt(nx * nx + ny * ny);
+          if (ndist < 1) {
+            const push = 1 / (ndist || 0.0001);
+            bx = mx + dx * push;
+            by = my + dy * push;
+          }
+        }
+      }
+
       if (fieldStrength > 0.001) {
         const dx = bx - field.x;
         const dy = by - field.y;
@@ -237,6 +382,12 @@ function Scene({ reduced, containerRef }) {
   const scatter = useMemo(() => buildScatter(PARTICLE_COUNT), []);
   const progressRef = useRef(reduced ? 1 : 0);
   const smoothProgress = useRef(reduced ? 1 : 0);
+  // The eyes' shared "juggle" clock — computed once per frame here (not
+  // per DustLayer tier) so all three size tiers push their bordering
+  // particles out of the same, currently-identical mask position. See
+  // BOUNCE_READY et al. and DustLayer's eyeMasks handling.
+  const eyeBounceStart = useRef(null);
+  const eyeBounceRef = useRef(0);
   // Cursor position, normalised -1..1 relative to the section (not the
   // window) — this is screen/NDC space, used to raycast into the mark's
   // own local coordinate space below. `active` is a separate eased 0..1
@@ -306,7 +457,7 @@ function Scene({ reduced, containerRef }) {
     };
   }, [reduced, containerRef]);
 
-  useFrame((_state, delta) => {
+  useFrame((state, delta) => {
     if (reduced) {
       progressRef.current = 1;
       return;
@@ -329,6 +480,26 @@ function Scene({ reduced, containerRef }) {
     const rawProgress = Math.max(0, Math.min(1, 1 - Math.abs(rect.top) / vh));
     smoothProgress.current += (rawProgress - smoothProgress.current) * Math.min(delta * 6, 1);
     progressRef.current = easeInOutCubic(smoothProgress.current);
+
+    // The eyes' one-time "juggle": latch the clock the first frame the
+    // mark is substantially assembled, then a couple of quick up-down
+    // wobbles decaying to ~0 within ~1.5-2s. Not started at mount — see
+    // BOUNCE_READY's comment for why that would mostly go unseen here.
+    if (eyeBounceStart.current === null && progressRef.current > BOUNCE_READY) {
+      eyeBounceStart.current = state.clock.elapsedTime;
+    }
+    if (eyeBounceStart.current !== null) {
+      const elapsed = state.clock.elapsedTime - eyeBounceStart.current;
+      // * progressRef.current is a harmless no-op once past the threshold
+      // (progress stays high while formed) and fades the wobble out if
+      // the visitor scrolls away mid-bounce, instead of it riding on
+      // scattered dust.
+      eyeBounceRef.current =
+        Math.sin(elapsed * BOUNCE_FREQUENCY) *
+        BOUNCE_AMPLITUDE *
+        Math.exp(-elapsed * BOUNCE_DECAY) *
+        progressRef.current;
+    }
 
     // Same exponential-decay-lerp as above, driven by pointer position —
     // both the NDC position and the separate active/inactive intensity
@@ -374,6 +545,14 @@ function Scene({ reduced, containerRef }) {
     return out;
   }, [sample, scatter]);
 
+  // Bundled once so every tier reads the exact same masks + bounce clock
+  // (identity is stable across renders since sample only changes once,
+  // and eyeBounceRef never changes identity — only its .current value).
+  const eyeMasks = useMemo(
+    () => (sample?.eyeMasks?.length ? { masks: sample.eyeMasks, bounceRef: eyeBounceRef } : null),
+    [sample]
+  );
+
   return (
     <>
       <ambientLight intensity={0.6} />
@@ -392,6 +571,7 @@ function Scene({ reduced, containerRef }) {
               reduced={reduced}
               progressRef={progressRef}
               cursorFieldRef={cursorFieldRef}
+              eyeMasks={eyeMasks}
             />
           ))}
       </group>

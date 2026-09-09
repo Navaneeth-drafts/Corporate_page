@@ -5,6 +5,7 @@ import react from '@astrojs/react';
 
 export default defineConfig({
   site: 'https://midearth.ai',
+  server: { port: 4323 },
   build: {
     // Inline CSS so any single page can be opened straight off disk.
     inlineStylesheets: 'always',
