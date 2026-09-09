@@ -11,7 +11,7 @@ export default function AgentAssembly() {
           presentation of it, never the only source. */}
       <noscript>
         <div className="assembly-fallback">
-          <img src="/logo-assembly-source.png" alt="MidEarth" width="220" height="200" />
+          <img src="/logo-assembly-source.png" alt="Mid Earth" width="220" height="200" />
         </div>
       </noscript>
     </div>

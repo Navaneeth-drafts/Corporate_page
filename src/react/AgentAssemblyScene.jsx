@@ -14,7 +14,7 @@ import * as THREE from "three";
  * way. Purely a function of scroll position either direction.
  */
 
-const PARTICLE_COUNT = 18000;
+const PARTICLE_COUNT = 24000; // denser fill so the shape reads solid against a light ground too, same source colours
 const MARK_SCALE = 4.6; // baked into sampleLogo's positions below
 const MARK_HALF_WIDTH = MARK_SCALE / 2;
 
@@ -264,9 +264,9 @@ const CURSOR_FIELD_SWIRL = 1.4; // max rotation, in radians, right at the cursor
 // then would burn most of the wobble's amplitude before `eased` ever
 // lets it show).
 const BOUNCE_READY = 0.8; // eased-progress threshold that starts the bounce clock
-const BOUNCE_FREQUENCY = 16; // rad/s
+const BOUNCE_FREQUENCY = 12.8; // rad/s — 20% slower than the original 16
 const BOUNCE_AMPLITUDE = 0.36; // local-space units — bigger than an eye's own radius
-const BOUNCE_DECAY = 2.1; // exponential decay rate
+const BOUNCE_DECAY = 1.68; // exponential decay rate — 20% slower than the original 2.1, so it also lingers proportionally longer
 
 /** One size-tier's worth of the shared cloud. Reads the already-eased,
  * already-smoothed progress computed once by the parent Scene each
@@ -478,7 +478,9 @@ function Scene({ reduced, containerRef }) {
     const rect = el.getBoundingClientRect();
     const vh = window.innerHeight || 1;
     const rawProgress = Math.max(0, Math.min(1, 1 - Math.abs(rect.top) / vh));
-    smoothProgress.current += (rawProgress - smoothProgress.current) * Math.min(delta * 6, 1);
+    // Settle-in rate: 4.8, not 6 — 20% slower, so the particles' gather
+    // into the mark reads as a felt motion rather than an instant snap.
+    smoothProgress.current += (rawProgress - smoothProgress.current) * Math.min(delta * 4.8, 1);
     progressRef.current = easeInOutCubic(smoothProgress.current);
 
     // The eyes' one-time "juggle": latch the clock the first frame the
@@ -504,7 +506,7 @@ function Scene({ reduced, containerRef }) {
     // Same exponential-decay-lerp as above, driven by pointer position —
     // both the NDC position and the separate active/inactive intensity
     // ease rather than snap.
-    const k = Math.min(delta * 5, 1);
+    const k = Math.min(delta * 4, 1); // 20% slower than the original 5, matching the settle-in slowdown
     pointerSmooth.current.x += (pointerTarget.current.x - pointerSmooth.current.x) * k;
     pointerSmooth.current.y += (pointerTarget.current.y - pointerSmooth.current.y) * k;
     pointerSmooth.current.active += (pointerTarget.current.active - pointerSmooth.current.active) * k;
@@ -588,7 +590,7 @@ export default function AgentAssemblyScene() {
       ref={containerRef}
       className="ambly-canvas"
       role="img"
-      aria-label="The MidEarth mark, formed from a field of luminous blue and green particles. The formation follows scroll position, peaking once this section fully covers the screen, and scattering apart again as you scroll further past it or back up."
+      aria-label="The Mid Earth mark, formed from a field of luminous blue and green particles. The formation follows scroll position, peaking once this section fully covers the screen, and scattering apart again as you scroll further past it or back up."
     >
       <Canvas
         camera={{ position: [0, 0.1, 8.6], fov: 42 }}

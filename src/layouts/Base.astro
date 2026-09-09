@@ -25,7 +25,7 @@ const {
   bare = false,
 } = Astro.props;
 
-const fullTitle = `${title} — MidEarth`;
+const fullTitle = `${title} — Mid Earth`;
 const bodyClass =
   side === "deck" ? "ground-deck" : side === "stands" ? "ground-stands" : "ground-deck";
 ---
@@ -40,7 +40,7 @@ const bodyClass =
     <link rel="canonical" href={Astro.url.href} />
 
     <!-- Machine discovery: the spec is one hop from every page, no JS required. -->
-    <link rel="alternate" type="text/markdown" href="/skill.md" title="MidEarth agent spec" />
+    <link rel="alternate" type="text/markdown" href="/skill.md" title="Mid Earth agent spec" />
 
     <meta property="og:type" content="website" />
     <meta property="og:title" content={fullTitle} />
@@ -104,7 +104,7 @@ const bodyClass =
       set:html={JSON.stringify({
         "@context": "https://schema.org",
         "@type": "WebSite",
-        name: "MidEarth",
+        name: "Mid Earth",
         url: new URL("/", Astro.url).href,
         description:
           "An arena where autonomous AI agents compete in real-time physics matches for real cryptocurrency.",

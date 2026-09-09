@@ -14,7 +14,7 @@ import AgentAssembly from "../react/AgentAssembly.jsx";
  */
 ---
 
-<section class="ground-void assembly-section" aria-label="The MidEarth mark">
+<section class="ground-void assembly-section" aria-label="The Mid Earth mark">
   <div class="wrap-wide assembly-frame">
     <span class="assembly-word assembly-word-left display display-xxl" data-magnetic>Mid</span>
 
@@ -22,13 +22,12 @@ import AgentAssembly from "../react/AgentAssembly.jsx";
       <AgentAssembly client:load />
       <noscript>
         <div class="assembly-fallback">
-          <img src="/logo-assembly-source.png" alt="MidEarth" width="220" height="200" />
+          <img src="/logo-assembly-source.png" alt="Mid Earth" width="220" height="200" />
         </div>
       </noscript>
     </div>
 
     <span class="assembly-word assembly-word-right display display-xxl" data-magnetic>Earth</span>
-    <p class="assembly-caption mono dim" data-magnetic>Alpha</p>
   </div>
 </section>
 
@@ -85,18 +84,6 @@ import AgentAssembly from "../react/AgentAssembly.jsx";
     right: clamp(1rem, 4vw, 3rem);
     text-align: right;
   }
-  .assembly-caption {
-    position: absolute;
-    left: 50%;
-    bottom: clamp(1rem, 4vw, 2.5rem);
-    margin: 0;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    pointer-events: none;
-    z-index: 2;
-    transform: translateX(-50%) translate3d(var(--mx, 0px), var(--my, 0px), 0);
-  }
-
   @media (max-width: 720px) {
     .assembly-word {
       position: static;
@@ -105,12 +92,6 @@ import AgentAssembly from "../react/AgentAssembly.jsx";
       text-align: center;
     }
     .assembly-word-right {
-      text-align: center;
-    }
-    .assembly-caption {
-      position: static;
-      transform: none;
-      margin-top: 0.75rem;
       text-align: center;
     }
   }
@@ -182,4 +163,55 @@ import AgentAssembly from "../react/AgentAssembly.jsx";
       requestAnimationFrame(tick);
     }
   }
+
+  /* "Mid" is anchored a fixed distance from the frame's left edge, so its
+     gap to the mark is whatever room its own (short) text leaves over.
+     "Earth" was anchored the same fixed distance from the right edge —
+     but being a longer word, that left a visibly smaller gap on its side.
+     Rather than guess a matching CSS offset (the words are different
+     widths, in a proportional font, at a responsive size — no fixed
+     constant survives every viewport), measure Mid's real gap and mirror
+     it: Earth's `right` becomes whatever value puts its own inner edge
+     the same distance from centre as Mid's inner edge already sits.
+     Mid itself is never touched. No-op on the sub-720px stacked layout,
+     where the words aren't absolutely positioned at all.
+
+     "Earth" being wider than "Mid" can make an exact mirror geometrically
+     impossible at some viewport widths — the ideal value would push
+     Earth's box past the frame's own right edge. Floored at 0 (flush to
+     that edge, never past it): 0 is confirmed safe — the text itself
+     stays fully visible right up to the frame boundary — whereas letting
+     the raw negative value through would push part of "Earth" beyond the
+     frame and into the section's `overflow: hidden`, clipping it. */
+  function syncEarthGap() {
+    const frame = document.querySelector(".assembly-frame");
+    const mid = document.querySelector(".assembly-word-left");
+    const earth = document.querySelector(".assembly-word-right");
+    if (!(frame instanceof HTMLElement) || !(mid instanceof HTMLElement) || !(earth instanceof HTMLElement)) {
+      return;
+    }
+    if (getComputedStyle(mid).position !== "absolute") {
+      earth.style.right = ""; // stacked mobile layout — defer to the CSS default
+      return;
+    }
+    const frameRect = frame.getBoundingClientRect();
+    const midRect = mid.getBoundingClientRect();
+    const earthRect = earth.getBoundingClientRect();
+    const leftInset = midRect.left - frameRect.left; // Mid's own gap-defining inset, read back, not recomputed
+    const rightInset = leftInset + midRect.width - earthRect.width;
+    earth.style.right = `${Math.max(0, rightInset)}px`;
+  }
+
+  syncEarthGap(); // an immediate, likely-correct pass (fonts are often already cached)
+  Promise.resolve(document.fonts && document.fonts.ready).then(syncEarthGap); // then refine once fonts truly settle
+
+  let gapResizeScheduled = false;
+  window.addEventListener("resize", () => {
+    if (gapResizeScheduled) return;
+    gapResizeScheduled = true;
+    requestAnimationFrame(() => {
+      gapResizeScheduled = false;
+      syncEarthGap();
+    });
+  });
 </script>
