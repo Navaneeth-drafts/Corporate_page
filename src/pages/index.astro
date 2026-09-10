@@ -76,6 +76,16 @@ const agentParts = [
   side="seam"
   ogImage="/og/home.png"
 >
+  <!-- Above-the-fold hero visual (Assembly, below) samples this PNG on
+       mount via a plain `new Image()` fetch, which the browser can't
+       discover until the AgentAssembly bundle has downloaded, parsed and
+       run — this preload lets the same request start in parallel with
+       that JS instead of serially after it. Purely a fetch-priority hint;
+       nothing about what's rendered changes. -->
+  <Fragment slot="head">
+    <link rel="preload" as="image" href="/logo-assembly-source.png" crossorigin="anonymous" />
+  </Fragment>
+
   <!-- ============================================================ assembly
        The Mid Earth mark, always the first thing on the page. -->
   <Assembly />

@@ -613,6 +613,40 @@ function Scene({ reduced, containerRef }) {
 export default function AgentAssemblyScene() {
   const reduced = useReducedMotion();
   const containerRef = useRef(null);
+  // Pause the render/raycast loop entirely once this section is nowhere
+  // near the viewport (scrolled past into Doors/Network/Footer, or the tab
+  // is backgrounded) — same IntersectionObserver + visibilitychange gating
+  // Globe.astro/Network.astro/Arena.astro already use for their own
+  // hand-rolled rAF loops. Defaults to true so the very first frame (this
+  // section is above the fold) renders exactly as before; nothing about
+  // what's drawn while visible changes, only whether R3F keeps rendering
+  // once it can't be seen.
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    let intersecting = true;
+    const update = () => setVisible(intersecting && !document.hidden);
+
+    let io;
+    if ("IntersectionObserver" in window) {
+      io = new IntersectionObserver(
+        (entries) => {
+          intersecting = entries[0].isIntersecting;
+          update();
+        },
+        { threshold: 0.01 }
+      );
+      io.observe(el);
+    }
+    const handleVisibilityChange = () => update();
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      if (io) io.disconnect();
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, []);
 
   return (
     <div
@@ -625,6 +659,7 @@ export default function AgentAssemblyScene() {
         camera={{ position: [0, 0.1, 8.6], fov: 42 }}
         dpr={[1, 1.75]}
         gl={{ antialias: true, alpha: true, toneMapping: THREE.NoToneMapping }}
+        frameloop={visible ? "always" : "never"}
       >
         <Scene reduced={reduced} containerRef={containerRef} />
       </Canvas>
