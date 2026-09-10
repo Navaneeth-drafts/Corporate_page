@@ -117,10 +117,30 @@ const bodyClass =
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Loaded async (preload, then swapped to a real stylesheet on load) so
+         this external request never blocks first paint — a synchronous
+         <link rel="stylesheet"> to a third-party origin is both a render
+         blocker and a single point of failure if that origin is slow. Same
+         fonts, same final appearance; `display=swap` already meant body text
+         could render in the fallback stack briefly, this just makes that the
+         normal path instead of an edge case. -->
     <link
+      rel="preload"
+      as="style"
       href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap"
-      rel="stylesheet"
     />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap"
+      media="print"
+      onload="this.media='all'"
+    />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap"
+      />
+    </noscript>
   </head>
 
   <body class={bodyClass}>

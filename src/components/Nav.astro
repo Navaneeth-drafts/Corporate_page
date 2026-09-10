@@ -185,6 +185,16 @@ const isOn = (href: string) => pathname === href || pathname === href + "/";
     letter-spacing: 0.12em;
     line-height: 1;
   }
+  /* Nav isn't wrapped in a .ground-* class, so it has no --signal-fg to fall
+     back on — and at this badge's small size, light theme's own
+     --color-signal (#0f8a4a on #fbfdfc) measures 4.32:1, just under the
+     4.5:1 AA text minimum. --color-signal-hot is already the correctly
+     inverted, high-contrast step for light theme (dark, not bright — see
+     global.css) and clears it at 7.22:1. */
+  :global(html[data-theme="light"]) .alpha {
+    color: var(--color-signal-hot);
+    border-color: var(--color-signal-hot);
+  }
 
   /* Mark only — the lockup PNGs carry no wordmark, so "MidEarth" is set as
      live text next to it (theme-aware colour, no extra asset to swap). */

@@ -290,6 +290,15 @@ const BOUNCE_DECAY = 1.68; // exponential decay rate — 20% slower than the ori
 function DustLayer({ scatter, target, colors, size, glowTex, reduced, progressRef, cursorFieldRef, eyeMasks }) {
   const pointsRef = useRef(null);
   const positionsRef = useRef(scatter.slice());
+  // Every input this layer's output actually depends on, from the last
+  // frame that ran the full per-particle pass below. Settled + not
+  // scrolling + not hovering — which is most of a real visit, once the
+  // on-load bounce finishes — means these stop changing, so re-deriving
+  // 32k particles' positions from identical inputs is pure waste; skip
+  // straight to the next frame instead. Purely a cost cut: whenever any
+  // input actually differs, the full pass still runs and the output is
+  // exactly what it always was.
+  const lastRef = useRef({ valid: false, eased: 0, bounceY: 0, fx: 0, fy: 0, factive: 0 });
 
   useEffect(() => {
     if (reduced) {
@@ -303,11 +312,31 @@ function DustLayer({ scatter, target, colors, size, glowTex, reduced, progressRe
     const geom = pointsRef.current;
     if (!geom) return;
     const eased = progressRef.current;
-    const pos = geom.geometry.attributes.position.array;
     const field = cursorFieldRef.current;
+    const bounceY = eyeMasks ? eyeMasks.bounceRef.current : 0;
+
+    const EPS = 0.0001;
+    const last = lastRef.current;
+    if (
+      last.valid &&
+      Math.abs(eased - last.eased) < EPS &&
+      Math.abs(bounceY - last.bounceY) < EPS &&
+      Math.abs(field.x - last.fx) < EPS &&
+      Math.abs(field.y - last.fy) < EPS &&
+      Math.abs(field.active - last.factive) < EPS
+    ) {
+      return; // nothing this layer draws from has moved — geometry already reflects this exact state
+    }
+    last.valid = true;
+    last.eased = eased;
+    last.bounceY = bounceY;
+    last.fx = field.x;
+    last.fy = field.y;
+    last.factive = field.active;
+
+    const pos = geom.geometry.attributes.position.array;
     const fieldStrength = field.active * eased;
     const masks = eyeMasks ? eyeMasks.masks : null;
-    const bounceY = eyeMasks ? eyeMasks.bounceRef.current : 0;
 
     for (let i = 0; i < pos.length; i += 3) {
       let bx = scatter[i] + (target[i] - scatter[i]) * eased;
