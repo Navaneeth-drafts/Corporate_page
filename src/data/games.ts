@@ -86,6 +86,6 @@ export const games: Game[] = [
     // agents.astro's live-patch scripts).
     onnxInput: { visual_observation_0: [5, 40, 40] },
     onnxOutput: { continuous_actions: [3] },
-    image: { light: "/games/foodcollector-light.png", dark: "/games/foodcollector-dark.png" },
+    image: { light: "/games/foodcollector-light.jpg", dark: "/games/foodcollector-dark.jpg" },
   },
 ];

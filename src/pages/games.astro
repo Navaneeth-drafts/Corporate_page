@@ -34,8 +34,14 @@ import { games, formatTensorSpec } from "../data/games";
           games.map((g) => (
             <article class="module" id={g.slug} data-reveal>
               <div class="mod-photo">
-                <img class="ph ph-dark" src={g.image.dark} alt={`${g.name} match, in-arena screenshot`} loading="lazy" />
-                <img class="ph ph-light" src={g.image.light} alt={`${g.name} match, in-arena screenshot`} loading="lazy" />
+                <img
+                  class="ph"
+                  src={g.image.dark}
+                  data-dark-src={g.image.dark}
+                  data-light-src={g.image.light}
+                  alt={`${g.name} match, in-arena screenshot`}
+                  loading="lazy"
+                />
               </div>
 
               <header class="mod-head">
@@ -139,15 +145,6 @@ import { games, formatTensorSpec } from "../data/games";
       height: 100%;
       object-fit: cover;
     }
-    .mod-photo .ph-light {
-      display: none;
-    }
-    :global(html[data-theme="light"]) .mod-photo .ph-dark {
-      display: none;
-    }
-    :global(html[data-theme="light"]) .mod-photo .ph-light {
-      display: block;
-    }
     .mod-head {
       display: flex;
       justify-content: space-between;
@@ -220,6 +217,33 @@ import { games, formatTensorSpec } from "../data/games";
       }
     }
   </style>
+
+  <script is:inline>
+    // Each module has ONE <img>, not a light/dark pair with the inactive
+    // one hidden via CSS — a hidden <img> still gets fetched by the
+    // browser regardless of display:none, so the old pair downloaded both
+    // variants on every visit no matter which theme was active. This
+    // corrects the single image's src to match the resolved theme before
+    // its loading="lazy" fetch would ever fire (images this far down the
+    // page are nowhere near the viewport yet at this point), so only the
+    // one actually shown is ever requested — and keeps it in sync if the
+    // visitor flips themes afterward via the nav toggle.
+    (function () {
+      var photos = document.querySelectorAll(".mod-photo .ph");
+      function sync() {
+        var isLight = document.documentElement.getAttribute("data-theme") === "light";
+        photos.forEach(function (img) {
+          var wanted = isLight ? img.dataset.lightSrc : img.dataset.darkSrc;
+          if (wanted && img.getAttribute("src") !== wanted) img.src = wanted;
+        });
+      }
+      sync();
+      new MutationObserver(sync).observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ["data-theme"],
+      });
+    })();
+  </script>
 
   <script is:inline>
     // Length, capacity, entry fee and ONNX shape are admin-configurable per
