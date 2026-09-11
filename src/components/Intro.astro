@@ -280,8 +280,19 @@ const { redirectTo } = Astro.props;
     // back-forward cache while still mid-intro for any reason, this
     // guarantees the overlay attribute — and the body scroll lock it
     // drives — can never survive a restore.
+    //
+    // On src/pages/launching.astro specifically, a restore only ever
+    // happens by hitting Back from the destination — this tab's history
+    // is just [/launching, redirectTo], so there is nothing else to land
+    // on. `started`/the cinematic's own state is frozen from the original
+    // run (bfcache preserves the JS heap), so nothing here would otherwise
+    // replay it or re-fire the redirect, leaving a blank page behind the
+    // now-hidden overlay. Send the tab straight on to redirectTo instead —
+    // same fallback the reduced-motion path above already uses.
     window.addEventListener("pageshow", function (e) {
-      if (e.persisted) document.documentElement.removeAttribute("data-intro");
+      if (!e.persisted) return;
+      document.documentElement.removeAttribute("data-intro");
+      if (redirectTo) window.location.href = redirectTo;
     });
 
     function startIntro() {
