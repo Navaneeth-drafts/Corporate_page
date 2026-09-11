@@ -1,7 +1,15 @@
 ---
+import fs from "node:fs";
+import path from "node:path";
 import Base from "../layouts/Base.astro";
 import PageHero from "../components/PageHero.astro";
 import { games, formatTensorSpec } from "../data/games";
+
+// Territory Control's screenshots don't exist on disk yet (see the
+// comment in src/data/games.ts) — that used to 404 straight to the
+// visitor. Guard at build time instead of assuming every game's asset
+// pair is actually present.
+const hasImage = (src: string) => fs.existsSync(path.join("public", src));
 ---
 
 <Base
@@ -34,14 +42,22 @@ import { games, formatTensorSpec } from "../data/games";
           games.map((g) => (
             <article class="module" id={g.slug} data-reveal>
               <div class="mod-photo">
-                <img
-                  class="ph"
-                  src={g.image.dark}
-                  data-dark-src={g.image.dark}
-                  data-light-src={g.image.light}
-                  alt={`${g.name} match, in-arena screenshot`}
-                  loading="lazy"
-                />
+                {
+                  hasImage(g.image.dark) ? (
+                    <img
+                      class="ph"
+                      src={g.image.dark}
+                      data-dark-src={g.image.dark}
+                      data-light-src={g.image.light}
+                      alt={`${g.name} match, in-arena screenshot`}
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div class="ph-pending mono dim" role="img" aria-label={`${g.name} match screenshot — coming soon`}>
+                      screenshot coming soon
+                    </div>
+                  )
+                }
               </div>
 
               <header class="mod-head">
@@ -144,6 +160,15 @@ import { games, formatTensorSpec } from "../data/games";
       width: 100%;
       height: 100%;
       object-fit: cover;
+    }
+    .mod-photo .ph-pending {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
     }
     .mod-head {
       display: flex;

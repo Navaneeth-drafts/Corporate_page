@@ -195,13 +195,21 @@ import Globe from "./Globe.astro";
     max-width: 62ch;
   }
 
-  @media (max-width: 820px) {
+  @media (max-width: 900px) {
     .ft-grid {
       grid-template-columns: 1fr;
     }
     .cols {
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 2rem 1.5rem;
+    }
+  }
+  /* .cols itself never collapsed to one column at any width — squeezes
+     link labels like "IDLE for Agents" to 2-3 lines on narrow phones. */
+  @media (max-width: 480px) {
+    .cols {
+      grid-template-columns: 1fr;
+      gap: 1.25rem;
     }
   }
 </style>

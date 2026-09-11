@@ -99,10 +99,10 @@ const scopeColor: Record<string, string> = {
           {
             index.map((r) => (
               <tr>
-                <td class="m">{r.m}</td>
-                <td class="p">{r.p}</td>
-                <td style={`color:${scopeColor[r.s]}`}>{r.s}</td>
-                <td class="dim d">{r.d}</td>
+                <td class="m" data-label="Method">{r.m}</td>
+                <td class="p" data-label="Path">{r.p}</td>
+                <td data-label="Scope" style={`color:${scopeColor[r.s]}`}>{r.s}</td>
+                <td class="dim d" data-label="Does">{r.d}</td>
               </tr>
             ))
           }
@@ -193,6 +193,24 @@ const scopeColor: Record<string, string> = {
       td {
         border: 0;
         padding: 0.15rem 0;
+      }
+      /* thead is hidden in this stacked layout, so Method/Path keep their
+         identity via color+font but Scope/Does had no label at all —
+         reintroduce it per cell instead of as a table header row. */
+      td::before {
+        content: attr(data-label);
+        display: block;
+        font-size: 0.58rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--color-paper-dim);
+      }
+      /* Path values are unbroken API routes — nowrap made sense in the
+         table layout (one line per row) but here it just clips the tail
+         of long paths off-screen. Let them wrap instead. */
+      .p {
+        white-space: normal;
+        overflow-wrap: anywhere;
       }
     }
   </style>

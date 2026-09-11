@@ -308,7 +308,8 @@ const bodyClass =
       body {
         display: flex;
         flex-direction: column;
-        min-height: 100vh;
+        min-height: 100vh; /* fallback for browsers without svh support */
+        min-height: 100svh;
         margin: 0;
       }
       #main {

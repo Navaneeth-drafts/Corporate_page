@@ -53,7 +53,12 @@
   --color-ink-faint: #82908f;
   --color-paper: #e8eef0;
   --color-paper-dim: #8da0a9;
-  --color-paper-faint: #5a6b75;
+  /* Was #5a6b75 — ~3.6:1 against --color-void/--color-deck, below the
+     4.5:1 WCAG AA minimum for the small (11-12px) label text this token
+     is used for (footer legal text, hero-rail labels, telemetry
+     captions). Brightened to clear AA while staying visibly dimmer than
+     --color-paper-dim. */
+  --color-paper-faint: #7d8e97;
 
   /* -- lines ------------------------------------------------------ */
   --color-rule: #1a2530;
@@ -573,6 +578,15 @@ body {
   outline-offset: 3px;
   border-radius: 2px;
 }
+/* The default ring above is squared-off; Nav's pill-shaped controls
+   (border-radius: 9999px) get a squarish ring around a round button. */
+.spec:focus-visible,
+.store:focus-visible,
+.launch:focus-visible,
+.theme:focus-visible,
+.nav-link:focus-visible {
+  border-radius: 9999px;
+}
 
 a {
   color: inherit;
@@ -741,7 +755,7 @@ canvas {
   top: -40%;
   bottom: -40%;
   width: 42%;
-  left: -50%;
+  left: 0;
   background: linear-gradient(
     100deg,
     transparent,
@@ -750,12 +764,18 @@ canvas {
     transparent
   );
   filter: blur(28px);
-  transform: rotate(12deg);
+  /* translateX instead of animating `left` — same travel distance
+     (the old left:-55%→115% range, re-expressed relative to this
+     element's own 42%-of-parent width: -55/42 and 115/42), but
+     compositable instead of layout-triggering. Static rotate+translate
+     here matches the animation's own 0% frame so there's no one-frame
+     flash at the wrong position before the animation engages. */
+  transform: rotate(12deg) translateX(-130.95%);
   animation: beam 19s var(--ease-in-out) infinite;
 }
 @keyframes beam {
   0% {
-    left: -55%;
+    transform: rotate(12deg) translateX(-130.95%);
     opacity: 0;
   }
   15% {
@@ -765,7 +785,7 @@ canvas {
     opacity: 1;
   }
   100% {
-    left: 115%;
+    transform: rotate(12deg) translateX(273.8%);
     opacity: 0;
   }
 }
@@ -808,6 +828,11 @@ html[data-theme="light"] .atmos-beam {
   line-height: 0.9;
   letter-spacing: -0.028em;
   text-wrap: balance;
+  /* Every clamp() below has a fixed rem floor that stops shrinking well
+     above the narrowest real viewports (smartwatches, folded foldables)
+     — this is the last-resort safety net so an oversized word wraps
+     instead of getting silently clipped by body{overflow-x:hidden}. */
+  overflow-wrap: anywhere;
 }
 
 .display-xxl {
@@ -829,6 +854,21 @@ html[data-theme="light"] .atmos-beam {
   font-size: clamp(1.15rem, 1.8vw, 1.4rem);
   line-height: 1.1;
   letter-spacing: -0.015em;
+}
+/* Below the narrowest widths any of these were tuned for, keep shrinking
+   instead of holding at the rem floor above — same rem ceiling, much
+   lower floor driven by vw so it keeps tracking the viewport down to
+   smartwatch/folded-foldable widths. */
+@media (max-width: 480px) {
+  .display-xxl {
+    font-size: clamp(1.8rem, 11vw, 10rem);
+  }
+  .display-xl {
+    font-size: clamp(1.6rem, 7.4vw, 6rem);
+  }
+  .display-l {
+    font-size: clamp(1.4rem, 5vw, 3.8rem);
+  }
 }
 
 /* The machine speaking. Never decoration. */
@@ -973,6 +1013,17 @@ html[data-theme="light"] .atmos-beam {
 /* Single source of vertical rhythm. Do not set section padding elsewhere. */
 .band {
   padding-block: clamp(4.5rem, 10vw, 9rem);
+}
+/* Ordinary body-content sections (docs/agents/humans/how-it-works/labs/
+   idle-for-agents/games) use the narrower .wrap and carry no atmos
+   background the way hero/footer do — their flat empty side margin
+   nearly triples across 1440-1920px with nothing filling it. Widen
+   them to .wrap-wide's cap, which the wider viewports already have
+   plenty of room for. */
+@media (min-width: 1440px) {
+  .band > .wrap {
+    max-width: 1480px;
+  }
 }
 .band-tight {
   padding-block: clamp(2.5rem, 5vw, 4rem);
@@ -1631,4 +1682,39 @@ html[data-theme="light"] .atmos-beam {
   background: color-mix(in srgb, var(--color-signal) 12%, transparent);
   border-bottom: 1px dashed color-mix(in srgb, var(--color-signal) 60%, transparent);
   padding: 0 0.25em;
+}
+
+/* ================================ print =================================
+   No print stylesheet existed at all. The concrete risk: with the dark
+   theme as the default, printing without any override risks either
+   near-invisible pale text on white paper or a fully dark printed page,
+   depending on how the browser's print engine handles the authored
+   colors — so every theme's text/background is forced here regardless
+   of the active data-theme, and the decorative/fixed chrome that adds
+   nothing on paper (nav, footer atmosphere, canvases, the intro overlay
+   and mobile sheet, already hidden by default) is suppressed. */
+@media print {
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  [data-nav],
+  .sheet,
+  .intro,
+  canvas,
+  .atmos,
+  [class*="atmos-"] {
+    display: none !important;
+  }
+  table {
+    border-collapse: collapse;
+  }
+  th,
+  td {
+    border-bottom: 1px solid #ccc !important;
+  }
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
 }

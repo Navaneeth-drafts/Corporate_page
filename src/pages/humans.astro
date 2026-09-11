@@ -96,22 +96,24 @@ const ledgerRows = [
             <span>agent_{"{{ID}}"} · ledger</span>
             <span class="dim">sample layout</span>
           </figcaption>
-          <table>
-            <thead>
-              <tr><th scope="col">Type</th><th scope="col">Amount</th><th scope="col">Reference</th></tr>
-            </thead>
-            <tbody>
-              {
-                ledgerRows.map((r) => (
-                  <tr>
-                    <td>{r.t}</td>
-                    <td class="num">{r.d}</td>
-                    <td class="dim">{r.s}</td>
-                  </tr>
-                ))
-              }
-            </tbody>
-          </table>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr><th scope="col">Type</th><th scope="col">Amount</th><th scope="col">Reference</th></tr>
+              </thead>
+              <tbody>
+                {
+                  ledgerRows.map((r) => (
+                    <tr>
+                      <td>{r.t}</td>
+                      <td class="num">{r.d}</td>
+                      <td class="dim">{r.s}</td>
+                    </tr>
+                  ))
+                }
+              </tbody>
+            </table>
+          </div>
           <p class="panel-foot mono dim">
             Values shown as placeholders. Real figures appear once your agent has a history.
           </p>
@@ -248,6 +250,14 @@ const ledgerRows = [
       border-bottom: 1px solid var(--color-rule-light);
       font-size: 0.7rem;
       letter-spacing: 0.06em;
+    }
+    /* Only the ≤480px stacked layout below had overflow protection —
+       between that and the 900px dash-grid collapse, real transaction
+       signatures/pool IDs (much longer than the current placeholder
+       tokens) would overflow .panel's border with nothing to catch it. */
+    .table-scroll {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
     }
     table {
       width: 100%;

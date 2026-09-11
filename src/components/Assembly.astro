@@ -84,7 +84,13 @@ import AgentAssembly from "../react/AgentAssembly.jsx";
     right: clamp(1rem, 4vw, 3rem);
     text-align: right;
   }
-  @media (max-width: 720px) {
+  /* Width-only, so it also fired for landscape phones (568-719px wide,
+     320-430px tall) — stacking the two words in normal flow on top of a
+     mount that's already exactly one viewport tall (100svh), pushing
+     total section height to ~1.3-1.5x the viewport. Gated on height too
+     now: a landscape phone keeps the overlay layout (no added height);
+     only a genuinely narrow AND tall viewport (portrait phones) stacks. */
+  @media (max-width: 720px) and (min-height: 560px) {
     .assembly-word {
       position: static;
       transform: none;
@@ -93,6 +99,11 @@ import AgentAssembly from "../react/AgentAssembly.jsx";
     }
     .assembly-word-right {
       text-align: center;
+    }
+  }
+  @media (max-height: 480px) {
+    .assembly-mount {
+      max-height: 70vh;
     }
   }
 </style>

@@ -491,7 +491,20 @@ const { compact = false } = Astro.props;
     max-width: 82ch;
   }
 
+  /* Tablet widths (~720-1000px) can comfortably fit two of these panels
+     side by side — jumping straight from 3 columns to 1 wastes width
+     and turns a short row into a much longer scroll. */
   @media (max-width: 1000px) {
+    .tri {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    /* 3 panels in a 2-column grid leaves the 3rd stranded alone in a
+       half-empty row — span it full width instead. */
+    .tri > :last-child {
+      grid-column: 1 / -1;
+    }
+  }
+  @media (max-width: 640px) {
     .tri {
       grid-template-columns: minmax(0, 1fr);
     }

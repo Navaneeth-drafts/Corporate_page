@@ -353,6 +353,16 @@ const agentParts = [
     letter-spacing: -0.03em;
     margin: 0 0 clamp(2rem, 5vw, 3.4rem);
   }
+  /* The clamp above holds its 2.2rem floor down to 0px — never verified
+     below the 768px this component's own comment describes. Below
+     480px that floor is too large for either sentence to hold to one
+     line; give phones a lower, still-legible floor instead. */
+  @media (max-width: 480px) {
+    .hero-h {
+      font-size: clamp(1.4rem, 7.5vw, 4.4rem);
+      line-height: 1.05;
+    }
+  }
   .hero-h em {
     font-style: normal;
   }
@@ -459,6 +469,7 @@ const agentParts = [
     content: "";
     position: absolute;
     top: -1px;
+    left: 0;
     height: 1px;
     width: 20%;
     background: linear-gradient(
@@ -468,12 +479,19 @@ const agentParts = [
       transparent
     );
     box-shadow: 0 0 12px color-mix(in srgb, var(--color-signal) 80%, transparent);
+    /* translateX instead of animating `left` — same travel distance
+       (the old left:-22%→100% range, re-expressed relative to this
+       element's own 20%-of-parent width), but compositable instead of
+       layout-triggering. The static transform here matches the
+       animation's 0% frame so there's no one-frame flash at the wrong
+       position before it engages. */
+    transform: translateX(-110%);
     animation: railrun 6s linear infinite;
     pointer-events: none;
   }
   @keyframes railrun {
     0% {
-      left: -22%;
+      transform: translateX(-110%);
       opacity: 0;
     }
     10% {
@@ -483,7 +501,7 @@ const agentParts = [
       opacity: 1;
     }
     100% {
-      left: 100%;
+      transform: translateX(500%);
       opacity: 0;
     }
   }
@@ -911,6 +929,21 @@ const agentParts = [
   }
 
   /* =========================================================== responsive */
+  /* The forced 5-across grid gets uncomfortably narrow right above the
+     1100px 2-column collapse below — a dedicated 3-column step for
+     tablet-landscape/small-laptop widths instead of jumping straight
+     from 5 to 2. Must come before the 1100px block below so that
+     query's own 2-column rule still wins at ≤1100px. */
+  @media (max-width: 1280px) {
+    .steps {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    /* 5 items wrap to two rows of 3 — same row-end border cleanup the
+       2-column tier below already does for its own row length. */
+    .steps li:nth-child(3n) {
+      border-right: 0;
+    }
+  }
   @media (max-width: 1100px) {
     .hero-copy {
       grid-template-columns: minmax(0, 1fr);

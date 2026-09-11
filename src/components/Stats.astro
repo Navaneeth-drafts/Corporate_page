@@ -182,6 +182,15 @@ const STATS = [
       padding-inline: 1.1rem;
     }
   }
+  /* Below this the row can't fit all 4 tiles even at their floor width,
+     so it becomes a horizontal scroller with no visible cue that more
+     content sits off-screen — fade the trailing edge to invite a swipe. */
+  @media (max-width: 480px) {
+    .stat-row {
+      -webkit-mask-image: linear-gradient(to right, #000 92%, transparent);
+      mask-image: linear-gradient(to right, #000 92%, transparent);
+    }
+  }
 </style>
 
 <script
