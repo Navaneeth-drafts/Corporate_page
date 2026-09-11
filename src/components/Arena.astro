@@ -440,6 +440,7 @@ const { compact = false, id = "arena" } = Astro.props;
   }
 </style>
 
+<script is:inline src="/scripts/visibility-gate.js"></script>
 <script is:inline>
   /* ------------------------------------------------------------------
      Match demonstration. Fixed timestep, capped work per frame,
@@ -701,33 +702,12 @@ const { compact = false, id = "arena" } = Astro.props;
         }
       }
 
-      function draw() {
-        var dpr = Math.min(window.devicePixelRatio || 1, 2);
-        var rect = canvas.getBoundingClientRect();
-        if (canvas.width !== Math.round(rect.width * dpr)) {
-          canvas.width = Math.round(rect.width * dpr);
-          canvas.height = Math.round(rect.height * dpr);
-        }
-        var sx = canvas.width / W,
-          sy = canvas.height / H;
-        var s = Math.min(sx, sy);
-        var ox = (canvas.width - W * s) / 2,
-          oy = (canvas.height - H * s) / 2;
-
-        ctx.save();
-
-        // ground: not flat — lit from the goal end
-        var g = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-        g.addColorStop(0, COL.void);
-        g.addColorStop(0.6, COL.deck);
-        g.addColorStop(1, COL.void);
-        ctx.fillStyle = g;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        ctx.translate(ox, oy);
-        ctx.scale(s, s);
-
-        // grid, minor + major
+      // draw() was one ~240-line function covering ground, grid, goal,
+      // border, blocks, agents and score bursts. Split into one function per
+      // visual layer, called in the same order, over the same shared ctx/COL
+      // /W/H/GOAL_X/tick/blocks/agents/bursts/mix this all closed over
+      // before the split — purely a decomposition, no behavior change.
+      function drawGrid() {
         ctx.lineWidth = 0.15;
         ctx.strokeStyle = mix(COL.agent, 0.1);
         ctx.beginPath();
@@ -753,7 +733,9 @@ const { compact = false, id = "arena" } = Astro.props;
           ctx.lineTo(W, my);
         }
         ctx.stroke();
+      }
 
+      function drawGoal() {
         // goal zone: an energised strip, breathing
         var breath = 0.06 + Math.sin(tick / 24) * 0.022;
         var gg = ctx.createLinearGradient(GOAL_X, 0, W, 0);
@@ -789,8 +771,9 @@ const { compact = false, id = "arena" } = Astro.props;
         ctx.lineTo(GOAL_X, H);
         ctx.stroke();
         ctx.restore();
+      }
 
-        // field border + corner brackets
+      function drawBorder() {
         ctx.strokeStyle = mix(COL.agent, 0.28);
         ctx.lineWidth = 0.3;
         ctx.strokeRect(0.15, 0.15, W - 0.3, H - 0.3);
@@ -809,7 +792,9 @@ const { compact = false, id = "arena" } = Astro.props;
           ctx.lineTo(c[0], c[1] + cl * c[3]);
           ctx.stroke();
         });
+      }
 
+      function drawBlocks() {
         // blocks: value-scaled, with depth and a value glyph
         blocks.forEach(function (b) {
           var hot = b.flash > 0;
@@ -847,7 +832,9 @@ const { compact = false, id = "arena" } = Astro.props;
           }
           ctx.restore();
         });
+      }
 
+      function drawAgents() {
         // rank order for tracking bracket on the leader
         var lead = agents
           .slice()
@@ -855,7 +842,6 @@ const { compact = false, id = "arena" } = Astro.props;
             return q.score - p.score;
           })[0];
 
-        // agents
         agents.forEach(function (a) {
           // trail: tapered, fading
           if (a.trail.length > 5) {
@@ -919,8 +905,9 @@ const { compact = false, id = "arena" } = Astro.props;
           ctx.textAlign = "center";
           ctx.fillText(a.id.replace("agent_", ""), a.x, a.y - a.r - 1.8);
         });
+      }
 
-        // score bursts
+      function drawBursts() {
         bursts.forEach(function (p) {
           var k = p.t / 0.9;
           if (p.p) {
@@ -938,6 +925,40 @@ const { compact = false, id = "arena" } = Astro.props;
             ctx.fillText("+" + p.value, p.x, p.y - 4 - k * 8);
           }
         });
+      }
+
+      function draw() {
+        var dpr = Math.min(window.devicePixelRatio || 1, 2);
+        var rect = canvas.getBoundingClientRect();
+        if (canvas.width !== Math.round(rect.width * dpr)) {
+          canvas.width = Math.round(rect.width * dpr);
+          canvas.height = Math.round(rect.height * dpr);
+        }
+        var sx = canvas.width / W,
+          sy = canvas.height / H;
+        var s = Math.min(sx, sy);
+        var ox = (canvas.width - W * s) / 2,
+          oy = (canvas.height - H * s) / 2;
+
+        ctx.save();
+
+        // ground: not flat — lit from the goal end
+        var g = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+        g.addColorStop(0, COL.void);
+        g.addColorStop(0.6, COL.deck);
+        g.addColorStop(1, COL.void);
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.translate(ox, oy);
+        ctx.scale(s, s);
+
+        drawGrid();
+        drawGoal();
+        drawBorder();
+        drawBlocks();
+        drawAgents();
+        drawBursts();
 
         ctx.restore();
       }
@@ -1015,16 +1036,7 @@ const { compact = false, id = "arena" } = Astro.props;
         return;
       }
 
-      var io = new IntersectionObserver(
-        function (es) {
-          visible = es[0].isIntersecting && !document.hidden;
-        },
-        { threshold: 0.05 }
-      );
-      io.observe(root);
-      document.addEventListener("visibilitychange", function () {
-        visible = !document.hidden;
-      });
+      midearthVisibilityGate(root, function (v) { visible = v; }, 0.05);
 
       raf = requestAnimationFrame(frame);
     });

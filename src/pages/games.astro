@@ -245,20 +245,12 @@ import { games, formatTensorSpec } from "../data/games";
     })();
   </script>
 
+  <script is:inline src="/scripts/onnx-spec.js"></script>
   <script is:inline>
     // Length, capacity, entry fee and ONNX shape are admin-configurable per
     // game and drift — the values rendered above are only the pre-fetch
-    // fallback.
+    // fallback. formatSpec() comes from /scripts/onnx-spec.js, loaded above.
     (function () {
-      function formatSpec(spec) {
-        if (!spec || typeof spec !== "object") return null;
-        return Object.keys(spec)
-          .map(function (name) {
-            return name + ": [" + spec[name].join(", ") + "]";
-          })
-          .join(", ");
-      }
-
       fetch("https://app.midearth.ai/api/v1/games")
         .then(function (r) {
           if (!r.ok) throw new Error("games unavailable");

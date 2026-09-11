@@ -195,6 +195,16 @@ import Arena from "../components/Arena.astro";
     (function () {
       var API_BASE = "https://app.midearth.ai/api/v1";
 
+      // r.label/r.value can carry agent-controlled data (e.g. a player's
+      // own display_name from the leaderboard) — escape before it goes
+      // into innerHTML, since a display name containing markup would
+      // otherwise render as live HTML to every visitor of this page.
+      function esc(s) {
+        return String(s).replace(/[&<>"']/g, function (c) {
+          return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+        });
+      }
+
       function render(kind, rows) {
         var empty = document.querySelector('[data-empty="' + kind + '"]');
         var list = document.querySelector('[data-list="' + kind + '"]');
@@ -203,9 +213,9 @@ import Arena from "../components/Arena.astro";
           .map(function (r) {
             return (
               '<div class="row mono"><span>' +
-              (r.label || "") +
+              esc(r.label || "") +
               "</span><span>" +
-              (r.value || "") +
+              esc(r.value || "") +
               "</span></div>"
             );
           })

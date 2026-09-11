@@ -114,7 +114,7 @@ import AgentAssembly from "../react/AgentAssembly.jsx";
     const RADIUS = 240; // px — how far from an element's center the pull reaches
     const STRENGTH = 0.35;
 
-    const state = Array.from(document.querySelectorAll("[data-magnetic]")).map((el) => ({
+    const state = Array.from(document.querySelectorAll<HTMLElement>("[data-magnetic]")).map((el) => ({
       el,
       tx: 0,
       ty: 0,
@@ -148,19 +148,58 @@ import AgentAssembly from "../react/AgentAssembly.jsx";
       window.addEventListener("pointermove", handleMove);
       window.addEventListener("pointerleave", handleLeave);
 
+      // Unlike every other hand-rolled rAF loop in this codebase (Arena,
+      // Network, Globe, the particle scene), this one used to run forever
+      // regardless of visibility or whether it had actually settled —
+      // gated the same way those already are, plus an idle-when-settled
+      // check specific to this effect (nothing else here has a true "rest"
+      // state to detect). `wake()` restarts it from whichever of the three
+      // triggers needs it: the section re-entering view, the tab
+      // refocusing, or a new pointer event arriving while idle.
+      let visible = true;
+      let rafId = 0;
+
       let last = performance.now();
       function tick(now: number) {
+        rafId = 0;
         const dt = Math.min((now - last) / 1000, 0.05);
         last = now;
+        let settled = true;
         state.forEach((s) => {
           s.tx += (s.targetX - s.tx) * Math.min(dt * 6, 1);
           s.ty += (s.targetY - s.ty) * Math.min(dt * 6, 1);
           s.el.style.setProperty("--mx", `${s.tx.toFixed(2)}px`);
           s.el.style.setProperty("--my", `${s.ty.toFixed(2)}px`);
+          if (Math.abs(s.tx) > 0.01 || Math.abs(s.ty) > 0.01 || Math.abs(s.targetX) > 0.01 || Math.abs(s.targetY) > 0.01) {
+            settled = false;
+          }
         });
-        requestAnimationFrame(tick);
+        if (visible && !settled) rafId = requestAnimationFrame(tick);
       }
-      requestAnimationFrame(tick);
+      function wake() {
+        if (visible && !rafId) rafId = requestAnimationFrame(tick);
+      }
+
+      const section = document.querySelector(".assembly-section");
+      if (section && "IntersectionObserver" in window) {
+        let intersecting = true;
+        const update = () => {
+          visible = intersecting && !document.hidden;
+          if (visible) wake();
+        };
+        new IntersectionObserver(
+          (entries) => {
+            intersecting = entries[0].isIntersecting;
+            update();
+          },
+          { threshold: 0.01 }
+        ).observe(section);
+        document.addEventListener("visibilitychange", update);
+      }
+
+      window.addEventListener("pointermove", wake);
+      window.addEventListener("pointerleave", wake);
+      rafId = requestAnimationFrame(tick);
     }
   }
 

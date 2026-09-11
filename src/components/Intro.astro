@@ -342,6 +342,7 @@ const { redirectTo } = Astro.props;
       root.classList.add("out");
       setTimeout(function () {
         document.documentElement.removeAttribute("data-intro");
+        window.removeEventListener("resize", layout);
         if (redirectTo) {
           // Same-tab navigation, never subject to the pop-up blocker no
           // matter how long the cinematic ran first.

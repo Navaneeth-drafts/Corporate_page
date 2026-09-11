@@ -1,4 +1,6 @@
 ---
+import { THEMES, THEME_COLORS } from "../data/themes";
+
 const { pathname } = Astro.url;
 const links = [
   { href: "/agents", label: "For Agents", side: "agent" },
@@ -583,7 +585,7 @@ const isOn = (href: string) => pathname === href || pathname === href + "/";
   }
 </style>
 
-<script is:inline>
+<script is:inline define:vars={{ THEMES, THEME_COLORS }}>
   (function () {
     var nav = document.querySelector("[data-nav]");
     var bar = document.querySelector("[data-scroll]");
@@ -610,8 +612,6 @@ const isOn = (href: string) => pathname === href || pathname === href + "/";
 
     // Theme control. The resolver in Base.astro has already set data-theme,
     // so this only ever cycles and stores an explicit choice.
-    var THEMES = ["dark", "light", "ember", "circuit", "orbit", "vault"];
-    var META = { dark: "#050506", light: "#fdfdfc", ember: "#06070a", circuit: "#020405", orbit: "#000205", vault: "#03060a" };
     var themeBtn = document.querySelector("[data-theme-toggle]");
     if (themeBtn) {
       var nameEl = themeBtn.querySelector("[data-theme-name]");
@@ -622,7 +622,7 @@ const isOn = (href: string) => pathname === href || pathname === href + "/";
         if (nameEl) nameEl.textContent = cur;
         var next = THEMES[(THEMES.indexOf(cur) + 1) % THEMES.length];
         themeBtn.setAttribute("aria-label", "Theme: " + cur + ". Switch to " + next + ".");
-        if (meta) meta.setAttribute("content", META[cur] || META.dark);
+        if (meta) meta.setAttribute("content", THEME_COLORS[cur] || THEME_COLORS.dark);
       }
       paint();
 

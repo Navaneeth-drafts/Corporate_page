@@ -244,8 +244,16 @@ const { compact = false } = Astro.props;
   }
 
   /* --------------------------------------------------------- arrows ---- */
+  /* Was `display: none` with nothing anywhere ever switching it back on —
+     silently dropped this whole small transitional accent (and, far more
+     consequentially, the ".tri" fix below) from ever rendering. Restored
+     as a centered row, matching the three-dot markup. */
   .flow {
-    display: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    padding-block: clamp(0.75rem, 2vw, 1.25rem);
   }
   .flow i {
     width: 5px;
@@ -271,8 +279,15 @@ const { compact = false } = Astro.props;
     }
   }
 
+  /* Was `display: none` unconditionally, with the only other .tri rule in
+     this file (the max-width:1000px query below) setting
+     grid-template-columns as if this were already a visible grid — so the
+     "02 AI agents" / "03 The game" / "04 Settlement" panels, and the ~300
+     lines of per-frame JS driving them, never actually rendered. */
   .tri {
-    display: none;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(1rem, 2.5vw, 1.75rem);
   }
 
   /* --------------------------------------------------------- agents ---- */
@@ -496,6 +511,7 @@ const { compact = false } = Astro.props;
   }
 </style>
 
+<script is:inline src="/scripts/visibility-gate.js"></script>
 <script is:inline define:vars={{ LAND, REGIONS, HUB }}>
   (function () {
     // Scope every lookup to this section. Querying the document would reach
@@ -1103,15 +1119,7 @@ const { compact = false } = Astro.props;
     }
 
     var visible = true, last = 0;
-    var section = sec;
-    if ("IntersectionObserver" in window) {
-      new IntersectionObserver(function (es) {
-        visible = es[0].isIntersecting && !document.hidden;
-      }, { threshold: 0.02 }).observe(section);
-    }
-    document.addEventListener("visibilitychange", function () {
-      visible = !document.hidden;
-    });
+    midearthVisibilityGate(sec, function (v) { visible = v; }, 0.02);
     if ("ResizeObserver" in window) {
       var rt;
       new ResizeObserver(function () {

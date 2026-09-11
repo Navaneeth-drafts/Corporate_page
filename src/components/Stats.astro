@@ -8,12 +8,7 @@
  * and 'platform_bonus') — not contest prize winnings; see
  * platform_stats.service.get_stats on the backend for the exact query.
  */
-const API_BASE = "https://app.midearth.ai/api/v1/public";
-
-// $IDLE → USD conversion rate, for the "(~$X)" next to Total IDLE
-// distributed. Kept in sync with the same fallback used in index.astro's
-// hero — see the comment there for the endpoint status.
-const FALLBACK_IDLE_USD_RATE = 0.00183;
+import { API_BASE, FALLBACK_IDLE_USD_RATE } from "../data/config";
 
 const STATS = [
   { key: "contests", label: "Contests run", note: "across both games", live: true, value: 1898 },

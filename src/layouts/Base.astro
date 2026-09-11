@@ -3,6 +3,7 @@ import "../styles/global.css";
 import Nav from "../components/Nav.astro";
 import Footer from "../components/Footer.astro";
 import Intro from "../components/Intro.astro";
+import { THEMES, THEME_COLORS } from "../data/themes";
 
 interface Props {
   title: string;
@@ -61,13 +62,13 @@ const bodyClass =
          ground on every navigation. Stored choice wins; otherwise follow the
          OS. With JS off no attribute is set and the site stays dark, which is
          the brand default and a complete, working design on its own. -->
-    <script is:inline>
+    <script is:inline define:vars={{ THEMES, THEME_COLORS }}>
       (function () {
         var t = null;
         try {
           t = localStorage.getItem("midearth:theme");
         } catch (e) {}
-        if (t !== "light" && t !== "dark" && t !== "ember" && t !== "circuit" && t !== "orbit" && t !== "vault") {
+        if (THEMES.indexOf(t) === -1) {
           t =
             window.matchMedia &&
             window.matchMedia("(prefers-color-scheme: light)").matches
@@ -76,8 +77,7 @@ const bodyClass =
         }
         document.documentElement.setAttribute("data-theme", t);
         var m = document.getElementById("theme-color");
-        var bar = { dark: "#050506", light: "#fdfdfc", ember: "#06070a", circuit: "#020405", orbit: "#000205", vault: "#03060a" };
-        if (m) m.setAttribute("content", bar[t] || bar.dark);
+        if (m) m.setAttribute("content", THEME_COLORS[t] || THEME_COLORS.dark);
 
         // Cold-open: does NOT play on this page. Every "Launch Agent"
         // control is a plain link straight to /launching now (see that

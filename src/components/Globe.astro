@@ -70,6 +70,7 @@ const { density = "normal", packets = true, x = 0.5, scale = 0.34 } = Astro.prop
   }
 </style>
 
+<script is:inline src="/scripts/visibility-gate.js"></script>
 <script is:inline define:vars={{ LAND, REGIONS }}>
   (function () {
     var roots = document.querySelectorAll("[data-globe]");
@@ -501,14 +502,7 @@ const { density = "normal", packets = true, x = 0.5, scale = 0.34 } = Astro.prop
           rt = setTimeout(function () { if (layout()) seedStars(); }, 200);
         }).observe(root);
       }
-      if ("IntersectionObserver" in window) {
-        new IntersectionObserver(function (es) {
-          visible = es[0].isIntersecting && !document.hidden;
-        }, { threshold: 0.01 }).observe(root);
-      }
-      document.addEventListener("visibilitychange", function () {
-        visible = !document.hidden;
-      });
+      midearthVisibilityGate(root, function (v) { visible = v; }, 0.01);
 
       function frame(t) {
         requestAnimationFrame(frame);
