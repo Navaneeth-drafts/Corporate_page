@@ -632,8 +632,12 @@ const isOn = (href: string) => pathname === href || pathname === href + "/";
   /* Below this, even the collapsed brand-group + right cluster (theme
      dot + burger) no longer fits on one non-wrapping row — drop the
      "ALPHA" badge and the "Mid Earth" wordmark text first (the logo
-     mark alone still carries an aria-label), and tighten every gap. */
-  @media (max-width: 400px) {
+     mark alone still carries an aria-label), and tighten every gap.
+     Measured: the row fits fine with both visible down to ~305px, so
+     this only fires for genuinely extreme widths (smartwatches, some
+     folded foldables) — every normal phone (320px+) keeps full
+     branding in the header instead of just a bare icon. */
+  @media (max-width: 304px) {
     .alpha {
       display: none;
     }

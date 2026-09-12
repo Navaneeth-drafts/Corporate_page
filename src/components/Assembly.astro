@@ -102,9 +102,19 @@ import AgentAssembly from "../react/AgentAssembly.jsx";
       transform: none;
       display: block;
       text-align: center;
+      margin-block: 0.35rem;
     }
     .assembly-word-right {
       text-align: center;
+    }
+    /* Stacking "Mid"/mark/"Earth" on top of a still-100svh mount made
+       the mobile hero run to 2-3x the viewport height before the
+       tagline was even in view. Same mark, much shorter box — this is
+       how most sites handle a hero graphic on mobile: scale the
+       visual down, not just re-flow the same full-screen sizing. */
+    .assembly-mount {
+      height: 58vh;
+      max-height: 30rem;
     }
   }
   @media (max-height: 480px) {
@@ -147,6 +157,7 @@ import AgentAssembly from "../react/AgentAssembly.jsx";
   @media (max-width: 720px) and (min-height: 560px) {
     .assembly-tag {
       margin-top: 0.5rem;
+      padding-bottom: clamp(1.5rem, 6vw, 2.5rem);
       font-size: clamp(1.15rem, 5vw, 1.6rem);
     }
   }
