@@ -109,15 +109,36 @@ import AgentAssembly from "../react/AgentAssembly.jsx";
     }
   }
 
+  /* The company tagline — sized and coloured to be read at a glance, not
+     a caption. Pulled up into the mount's own empty space below the mark
+     (the mark is vertically centred in a 100svh box, so there's real
+     room to close there) rather than left at the bottom of the section. */
   .assembly-tag {
     position: relative;
     z-index: 2;
-    margin: 0;
-    padding: 0 0 clamp(2rem, 5vw, 3.5rem);
+    margin: -20vh 0 0;
+    padding: 0 1.25rem clamp(2.5rem, 6vw, 4rem);
     text-align: center;
-    font-size: 0.85rem;
-    letter-spacing: 0.06em;
-    color: var(--color-paper-dim);
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-variation-settings: "wdth" 105;
+    font-size: clamp(1.4rem, 3.4vw, 2.5rem);
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    background: var(--grad-brand-soft);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+  }
+  /* The stacked mobile layout above already puts "Earth" in normal flow
+     directly below the mount — pulling the tag up here would run it
+     straight into that text instead of into empty space. */
+  @media (max-width: 720px) and (min-height: 560px) {
+    .assembly-tag {
+      margin-top: 0.5rem;
+      font-size: clamp(1.15rem, 5vw, 1.6rem);
+    }
   }
 </style>
 
