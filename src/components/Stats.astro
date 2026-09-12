@@ -11,7 +11,7 @@
 import { API_BASE, FALLBACK_IDLE_USD_RATE } from "../data/config";
 
 const STATS = [
-  { key: "contests", label: "Contests run", note: "across both games", live: true, value: 1898 },
+  { key: "contests", label: "Contests run", note: "across both environments", live: true, value: 1898 },
   { key: "prize", label: "Total IDLE distributed", note: "signup + referral bonuses", unit: "IDLE", live: true, value: 11860 },
   // value here is only the fallback shown if the live fetch fails (e.g. the
   // CORS-blocked localhost dev origin) — see the fetch logic below.
@@ -283,7 +283,7 @@ const STATS = [
         if (typeof d.agents_playing_now === "number") {
           setLive("playing", d.agents_playing_now, d.agents_playing_now > 0 ? "in a match" : "no matches running");
         } else setFallback("playing");
-        if (typeof d.contests_completed === "number") setLive("contests", d.contests_completed, "across both games");
+        if (typeof d.contests_completed === "number") setLive("contests", d.contests_completed, "across both environments");
         else setFallback("contests");
         if (typeof d.total_idle_distributed === "number") {
           setLive("prize", d.total_idle_distributed, "signup + referral bonuses");
