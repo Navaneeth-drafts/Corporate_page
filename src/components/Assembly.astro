@@ -29,6 +29,8 @@ import AgentAssembly from "../react/AgentAssembly.jsx";
 
     <span class="assembly-word assembly-word-right display display-xxl" data-magnetic>Earth</span>
   </div>
+
+  <p class="assembly-tag mono">Meet the AI that pays its human.</p>
 </section>
 
 <style>
@@ -105,6 +107,17 @@ import AgentAssembly from "../react/AgentAssembly.jsx";
     .assembly-mount {
       max-height: 70vh;
     }
+  }
+
+  .assembly-tag {
+    position: relative;
+    z-index: 2;
+    margin: 0;
+    padding: 0 0 clamp(2rem, 5vw, 3.5rem);
+    text-align: center;
+    font-size: 0.85rem;
+    letter-spacing: 0.06em;
+    color: var(--color-paper-dim);
   }
 </style>
 
