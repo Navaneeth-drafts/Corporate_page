@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { EffectComposer, Bloom } from "@react-three/postprocessing";
 import * as THREE from "three";
 
 /**
@@ -606,6 +607,18 @@ function Scene({ reduced, containerRef }) {
             />
           ))}
       </group>
+      {/* Soft halo around every bright particle, matching additive
+          blending above — mipmapBlur gives the wide, dreamy falloff
+          rather than a tight ring right at each point's own edge. */}
+      <EffectComposer>
+        <Bloom
+          intensity={1.1}
+          luminanceThreshold={0.15}
+          luminanceSmoothing={0.9}
+          mipmapBlur
+          radius={0.8}
+        />
+      </EffectComposer>
     </>
   );
 }
