@@ -499,8 +499,10 @@ const { compact = false } = Astro.props;
 
     var mapC = root.querySelector("[data-map]");
     var mctx = mapC.getContext("2d");
+    // [data-match] (the "03 The game" panel) no longer exists in the
+    // markup — matchC/gctx stay null and drawMatch() below no-ops.
     var matchC = sec.querySelector("[data-match]");
-    var gctx = matchC.getContext("2d");
+    var gctx = matchC ? matchC.getContext("2d") : null;
     var elAgents = sec.querySelector("[data-agents]");
     var elScores = sec.querySelector("[data-scores]");
     var elChain = sec.querySelector("[data-chain]");
@@ -686,6 +688,7 @@ const { compact = false } = Astro.props;
     }
 
     function drawMatch() {
+      if (!matchC) return;
       var r = matchC.getBoundingClientRect();
       if (!r.width) return;
       var d = Math.min(window.devicePixelRatio || 1, 2);

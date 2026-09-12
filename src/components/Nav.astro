@@ -22,7 +22,6 @@ const isOn = (href: string) => pathname === href || pathname === href + "/";
         <span class="word">Mid Earth</span>
       </a>
       <span class="alpha mono" aria-label="Alpha release">ALPHA</span>
-      <span class="tagline mono">Meet the AI that pays its human.</span>
     </div>
 
     <nav aria-label="Primary" class="desk">
@@ -197,25 +196,6 @@ const isOn = (href: string) => pathname === href || pathname === href + "/";
   :global(html[data-theme="light"]) .alpha {
     color: var(--color-signal-hot);
     border-color: var(--color-signal-hot);
-  }
-
-  /* Hidden below this — the nav row already has no slack to spare
-     below it (see the .desk/.status breakpoint further down), so a
-     full sentence here only ever gets room on genuinely wide desktops. */
-  .tagline {
-    display: none;
-    flex: none;
-    padding-left: 0.6rem;
-    border-left: 1px solid var(--color-rule);
-    font-size: 0.66rem;
-    letter-spacing: 0.04em;
-    color: var(--color-paper-faint);
-    white-space: nowrap;
-  }
-  @media (min-width: 1600px) {
-    .tagline {
-      display: inline;
-    }
   }
 
   /* Mark only — the lockup PNGs carry no wordmark, so "MidEarth" is set as
