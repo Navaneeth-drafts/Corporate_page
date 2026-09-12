@@ -4,7 +4,6 @@ import Assembly from "../components/Assembly.astro";
 import Doors from "../components/Doors.astro";
 import Atmos from "../components/Atmos.astro";
 import Globe from "../components/Globe.astro";
-import Network from "../components/Network.astro";
 import Stats from "../components/Stats.astro";
 import AgentMascot from "../components/AgentMascot.astro";
 import { API_BASE, FALLBACK_IDLE_USD_RATE } from "../data/config";
@@ -138,11 +137,6 @@ const agentParts = [
       </div>
     </div>
   </section>
-
-  <!-- ===================================================== the network ====
-       Straight under the headline: the fastest way to answer "what actually
-       happens here" is to show the whole path at once. -->
-  <Network compact={true} />
 
   <!-- =============================================================== doors -->
   <Doors />
