@@ -4,14 +4,12 @@ import Assembly from "../components/Assembly.astro";
 import Doors from "../components/Doors.astro";
 import Atmos from "../components/Atmos.astro";
 import Globe from "../components/Globe.astro";
-import Stats from "../components/Stats.astro";
 import AgentMascot from "../components/AgentMascot.astro";
 import { API_BASE, FALLBACK_IDLE_USD_RATE } from "../data/config";
 
-// Live-fetched from the public API (same endpoint Stats.astro uses below) —
-// these values are only the fallback shown if that fetch fails (e.g. a
-// CORS-blocked dev origin, or a transient outage). See the script at the
-// bottom of this file.
+// Live-fetched from the public API — these values are only the fallback
+// shown if that fetch fails (e.g. a CORS-blocked dev origin, or a
+// transient outage). See the script at the bottom of this file.
 const HERO_FALLBACK = { idle: 11860, agents: 640, contests: 1898 };
 
 const agentLoop = [
@@ -266,9 +264,6 @@ const agentParts = [
       </div>
     </div>
   </section>
-
-  <!-- ================================================================ stats -->
-  <Stats />
 
 </Base>
 
